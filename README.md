@@ -7,4 +7,4 @@ Multi-task gAussian pRocess for CosmologIcal Applications
 
 ### Documentation 
 
-Please visit marcia.readthedocs.io
+Please visit [marcia.readthedocs.io](https://marcia.readthedocs.io/en/latest/)
