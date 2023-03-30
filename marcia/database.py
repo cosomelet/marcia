@@ -10,14 +10,15 @@ class Data:
     def __init__(self,data:str) -> None:
         assert data in ['CC']
         self.__data_dic__ = {
-                            'CC': ['CC.txt','z','H','dH'],
+                            'CC': ['CC.txt','z','cc','dcc'],
                             }
         self.data = data
         self.datafile = loadtxt(os.path.join(__datapath__, self.__data_dic__[data][0]))
 
     def __getattr__(self,name: str):
         if name in self.__data_dic__[self.data][1:]:
-            return self.datafile[self.__data_dic__[self.data].index(name)-1]
+            return self.datafile[:,self.__data_dic__[self.data].index(name)-1]
         else:
-            raise AttributeError(f'{name} is not a valid attribute for {self.data}') #TODO: print available attributes
+            #TODO: print available attributes
+            raise AttributeError(f'{name} is not a valid attribute for {self.data}') 
 
