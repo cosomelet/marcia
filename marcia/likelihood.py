@@ -1,6 +1,6 @@
 import numpy as np
-from marcia.database import Data as db
-from marcia.cosmology import Cosmology as cosmo 
+from marcia import Data as db
+from marcia import Cosmology as cosmo 
 
 
 

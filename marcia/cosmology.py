@@ -6,7 +6,7 @@ import sys
 import time
 import cmath
 import os
-from .database import Data
+from marcia.database import Data
 
 
 class Cosmology(object):
