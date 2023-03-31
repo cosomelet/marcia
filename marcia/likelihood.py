@@ -15,20 +15,11 @@ class Likelihood(object):
         # This list sets the available data to work with, has to be updated when ever a new dataset is added
         self.datalist = ['CC','BAO-DR12','BAO-DR14','Ly-alpha','SN','SNE','R18']
         # The nuisance parameters for each of the datasets, if any have to be added here to the theta
-        
-        self.data_set = set(self.data)
-        self.data_counter = 0
-        for i,x in enumerate(self.data):
-            if x == self.datalist[0]:
-             
-                dataCC = np.loadtxt(datapath+'/Cosmic_Clocks/CC.txt')
-                self.zHs = dataCC[:, 0]
-                self.Hzs = dataCC[:, 1]
-                self.SHzs = dataCC[:, 2]
-                self.SCC = np.diag(dataCC[:, 2]**2)
-                self.nHs = len(self.zHs)
-                self.data_counter += 1
-                print(' ---- done')
+    
+
+    def __getattribute__(self, item):
+        return super(Likelihood, self).__getattribute__(item)
+
             
     def chisq_CC(self,theta):
         data = db('CC')
@@ -39,7 +30,7 @@ class Likelihood(object):
     def chisq(self,theta):
         chi2 = 0
         for i in self.data:
-            chi2 += self.__getarrt__(f'chisq_{i}')(theta)
+            chi2 += self.__getattribute__(f'chisq_{i}')(theta)
         return chi2
     
     def logPrior(self, theta):
