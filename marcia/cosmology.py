@@ -124,7 +124,7 @@ class Cosmology(object):
         return cmat_Star_Star
 
     # Define expansion rate H(z) for the corresponding models
-    def hubble_rate(self, z:list):
+    def hubble_rate_var(self, z:list):
         
         # Use this print, in case needed for Error_handling.
         if self.model in ['SE', 'M92', 'M72']:
@@ -143,7 +143,7 @@ class Cosmology(object):
         # Use this print, in case needed for Error_handling.
         # print ''
         if self.model in ['SE', 'M92', 'M72']:
-            Eofz = self.hubble_rate(z)/self.hubble_rate(0.0)
+            Eofz = self.hubble_rate_var(z)/self.hubble_rate_var(0.0)
             return np.nan_to_num(Eofz)
         elif self.model in ['kernel']:
             print('This equation has still to be defined ')
@@ -155,11 +155,11 @@ class Cosmology(object):
         # print ''
         if self.model in ['SE', 'M92', 'M72']:
             if self.Omega_k > 0.0:
-                return np.nan_to_num( self.clight/(np.sqrt(self.Omega_k)*self.hubble_rate(0.0))*np.sinh(np.sqrt(self.Omega_k)*self.hubble_rate(0.0)*quad(lambda y: 1./self.hubble_rate(y),0,z)[0]))
+                return np.nan_to_num( self.clight/(np.sqrt(self.Omega_k)*self.hubble_rate_var(0.0))*np.sinh(np.sqrt(self.Omega_k)*self.hubble_rate_var(0.0)*quad(lambda y: 1./self.hubble_rate_var(y),0,z)[0]))
             elif self.Omega_k < 0.0:
-                return np.nan_to_num( self.clight/(np.sqrt(abs(self.Omega_k))*self.hubble_rate(0.0))*np.sin(np.sqrt(abs(self.Omega_k))*self.hubble_rate(0.0)*quad(lambda y: 1./self.hubble_rate(y),0,z)[0]))
+                return np.nan_to_num( self.clight/(np.sqrt(abs(self.Omega_k))*self.hubble_rate_var(0.0))*np.sin(np.sqrt(abs(self.Omega_k))*self.hubble_rate_var(0.0)*quad(lambda y: 1./self.hubble_rate_var(y),0,z)[0]))
             elif self.Omega_k == 0.0:
-                return np.nan_to_num( self.clight*quad(lambda y: 1./self.hubble_rate(y),0,z)[0])
+                return np.nan_to_num( self.clight*quad(lambda y: 1./self.hubble_rate_var(y),0,z)[0])
         elif self.model in ['kernel']:
             print('This integral has still to be defined')
             return 1.
