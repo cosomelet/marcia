@@ -68,6 +68,8 @@ class Cosmology(object):
         self.DetCovMat = 0.0
         self.InvCovMat = self.Inv_Cov_Mat()
         self.InvCovMatCC = np.dot(self.InvCovMat, self.data_cc.cc).T
+        self.Omega_m = 0.3 # @sandeep review this
+        self.H_0 = 70.0 # @sandeep review this
 
     # This is to define the different possible kernel choices
     def kernel(self, x1, x2):
@@ -112,7 +114,7 @@ class Cosmology(object):
     
     # Covariance matrix of prediction star
     def Cov_Mat_SS(self, x1):
-        zp = x1
+        zp = [x1]
         #np.linspace(0.,2.5,50)
         cmatrix = np.reshape([0.0]*(len(zp)*len(zp)),(len(zp),len(zp)))
         for i in range(len(zp)):
