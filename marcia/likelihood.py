@@ -15,7 +15,7 @@ class Likelihood(object):
         # This list sets the available data to work with, has to be updated when ever a new dataset is added
         self.datalist = ['CC','BAO-DR12','BAO-DR14','Ly-alpha','SN','SNE','R18']
         # The nuisance parameters for each of the datasets, if any have to be added here to the theta
-    
+        
 
     def __getattribute__(self, item):
         return super(Likelihood, self).__getattribute__(item)
@@ -24,7 +24,7 @@ class Likelihood(object):
     def chisq_CC(self,theta):
         data = db('CC')
         theory = cosmo(self.model,theta)
-        return  np.dot( data.cc, np.dot( theory.InvCovMat , data.cc.T) ) + np.log( theory.DetCovMat ) +  np.log(2. *np.pi )*len(data.z)
+        return  np.dot( data.cc , np.dot( theory.CovMat , data.cc.T) ) + np.log( theory.DetCovMat ) +  np.log(2. *np.pi )*len(data.z)
 
 
     def chisq(self,theta):
