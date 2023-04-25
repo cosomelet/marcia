@@ -1,0 +1,19 @@
+
+
+
+- corona and interplay not necessarily known ..
+
+- dust extinction 
+
+	All these are going to vary the intrinsic redshift and so the fluxes themselves ..
+
+- He said 4 sigma but it is really not so ?
+
+- Extrapolation of the UV luminosity to high redshift.
+
+- reddening is corrected by taking different color/band at different redshift. This is not the best but the only available solution. 
+
+- Looking only for the brightest objects is the way the bias is reduced as much as possible. 
+
+
+- Since a number of approximations are involved there could be possible way to have a simultaneous analysis of systematics and statistics. Can it be done ?
