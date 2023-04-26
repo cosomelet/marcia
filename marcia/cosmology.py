@@ -13,7 +13,7 @@ class Cosmology(object):
     """
         General background theory that all the theories must be inherited from.
         Inputs would be the appropriate cosmological parameters needed for the particular model. 
-        
+        To change
         """
     
     def __init__(self, model, parameters):
