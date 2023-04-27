@@ -16,7 +16,6 @@ class Kernels(object):
         Inputs would be the appropriate cosmological parameters needed for the particular model. 
         
         """
-    
     def __init__(self, model, parameters, data):
         
         self.data = data 
@@ -26,7 +25,6 @@ class Kernels(object):
         if len(self.data) != len(self.model):
             print('Error: data length does not match the number of kernels')
             
-        
         if 'self-scaled' in model and len(model) == len(parameters)+1:
             self.model = self.model[:-1]
             # Implying that the scale length for all the datasets is set to be the same, we need sigma_f equal to the number of GPs and one l_f
