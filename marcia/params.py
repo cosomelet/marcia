@@ -1,6 +1,7 @@
 import toml
 import os
 
+
 class DictToObject:
     def __init__(self, dictionary):
         for key, value in dictionary.items():
@@ -19,6 +20,7 @@ class Params:
         
         self.parameters = parameters
         check = self.check_params
+    
 
     def __call__(self,parameters):
         param_dic = {}
@@ -29,7 +31,7 @@ class Params:
         
     
         
-
+    
     @property
     def check_params(self):
         for param in self.parameters:
