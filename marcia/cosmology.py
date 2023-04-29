@@ -8,6 +8,7 @@ import time
 import cmath
 import os
 from marcia.database import Data
+from marcia.params import Params
 
 
 class Cosmology(object):
@@ -17,49 +18,30 @@ class Cosmology(object):
         To change
         """
     
-    def __init__(self, parameters,model=[]):
-        #self.zlist = z
-        # To add the expected nuisance parameters of the model here: model = ['LCDM', 'rd']
+    def __init__(self, params,prior_file=None):
+        # model = [] with rd, mb ,ob
+        # params = ['ho'] 
+        param = Params(params,prior_file)
+        self.priors = param.Priors
+        self.labels = param.Labels
+
+
         self.rdsample = False
         self.Mbsample = False
         self.Obsample = False
         
-        self.params = []
-        self.priors = []
-        self.labels = []
 
-        if 'rd' in model:
+        if 'r_d' in params:
             self.rdsample = True
-            self.params += ['r_d']
-            self.priors += [[100.,180.]]
-            self.labels += ['$r_d$']
-        if 'Mb' in model:
+        if 'M_b' in params:
             self.Mbsample = True
-            self.params += ['M_b']
-            self.priors += [[-20.,-18.]]
-            self.labels += ['$M_b$']
-        if 'Ob' in model:
+        if 'Omega_b' in params:
             self.Obsample = True
-            self.params += ['Omega_b']
-            self.priors += [[0.01,0.05]]
-            self.labels += ['$\Omega_b$']
+
 
     
-        
-        if self.rdsample and self.Mbsample:
-            self.rd = parameters[-2]
-            self.Mb = parameters[-1]
-        elif self.rdsample and self.Obsample:
-            self.rd = parameters[-2]
-            self.Ob = parameters[-1]
-        elif self.Mbsample and self.Obsample:
+        if self.rdsample and self.Obsample:
             raise ValueError('Mb and Ob cannot be sampled together')
-        elif self.rdsample:
-            self.rd = parameters[-1]
-        elif self.Mbsample:
-            self.Mb = parameters[-1]
-        elif self.Obsample:
-            self.Ob = parameters[-1]
         
 
         self.clight = 299792458. / 1000.
@@ -68,13 +50,13 @@ class Cosmology(object):
     def a(z):
         return 1. / (1. + z)
 
-    def dark_energy_f(self, z):
+    def dark_energy_f(self,parameters, z):
         pass
 
-    def dark_energy_w(self, z):
+    def dark_energy_w(self,parameters, z):
         pass
     
-    def hubble_rate(self, z):
+    def hubble_rate(self,parameters, z):
         # Use this print, in case needed for Error_handling.
         # print ''
         zeq = 2.5 * 10.**4. * (self.Omega_m + self.Omega_b) * (self.H_0/100.)**2. /(2.7255/2.7)**4.
