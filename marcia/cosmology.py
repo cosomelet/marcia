@@ -10,7 +10,6 @@ import os
 from marcia.database import Data
 from marcia.params import Params
 
-
 class Cosmology(object):
     """
         General background theory that all the theories must be inherited from.
@@ -21,9 +20,9 @@ class Cosmology(object):
     def __init__(self, params,prior_file=None):
         # model = [] with rd, mb ,ob
         # params = ['ho'] 
-        param = Params(params,prior_file)
-        self.priors = param.Priors
-        self.labels = param.Labels
+        self.param = Params(params,prior_file)
+        self.priors = self.param.Priors
+        self.labels = self.param.Labels
 
 
         self.rdsample = False
@@ -59,28 +58,28 @@ class Cosmology(object):
     def hubble_rate(self,parameters, z):
         # Use this print, in case needed for Error_handling.
         # print ''
-        zeq = 2.5 * 10.**4. * (self.Omega_m + self.Omega_b) * (self.H_0/100.)**2. /(2.7255/2.7)**4.
-        self.z_eq = zeq
-        #Omega_r = (self.Omega_m + self.Omega_b) /(1. + zeq)
-        Omega_r = 4.18343*10**-5./(self.H_0/100.)**2.
-        E2 = Omega_r*pow((1. + z),4.) + self.Omega_m*pow((1. + z),3.) + self.Omega_b*pow((1. + z),3.) + self.Omega_k*pow((1. + z),2.) + (1. - self.Omega_m - self.Omega_k - self.Omega_b - Omega_r)*self.dark_energy_f(z)
-        Hofz = self.H_0*np.sqrt( E2 )
+        p = self.param(parameters)
+        zeq = 2.5 * 10.**4. * (p.Omega_m + p.Omega_b) * (p.H0/100.)**2. /(2.7255/2.7)**4.
+        Omega_r = 4.18343*10**-5./(p.H0/100.)**2.
+        E2 = Omega_r*pow((1. + z),4.) + p.Omega_m*pow((1. + z),3.) + p.Omega_b*pow((1. + z),3.) + p.Omega_k*pow((1. + z),2.) + (1. - p.Omega_m - p.Omega_k - p.Omega_b - Omega_r)*self.dark_energy_f(parameters,z)
+        Hofz = self.H0*np.sqrt( E2 )
         return np.nan_to_num(Hofz)
        
 
     #To define the value of r_d using the Aubourg15 formulae
-    def sound_horizon(self):
+    def sound_horizon(self,parameters):
+        p = self.param(parameters)
         if self.rdsample:
-            rd = self.r_d
+            rd = p.r_d
         else:
             m_nu = 0.06 # In the units of eV
             omega_nu = 0.0107 *(m_nu/1.0) #This is in the units of eV. This should be equal to 6.42*10^(-4)
             if self.Obsample:
-                omega_b = self.Omega_b*(self.H_0/100.)**2. #0.0217
+                omega_b = p.Omega_b*(p.H0/100.)**2. #0.0217
             else:
                 omega_b = 0.0217
             
-            omega_cb = (self.Omega_m+self.Omega_b)*(self.H_0/100.)**2 - omega_nu
+            omega_cb = (p.Omega_m+p.Omega_b)*(p.H0/100.)**2 - omega_nu
             if omega_cb < 0:
                 rd = -1.0
             else:
@@ -89,9 +88,10 @@ class Cosmology(object):
         return rd
 
     # This is to model the mu, but however the Mb is set inside, therefore it is M_b + mu but not mu alone
-    def distance_modulus(self, z1, z2):
+    def distance_modulus(self,parameters,z1, z2):
+        p = self.param(parameters)
         if self.Mbsample:
-            Mb = self.M_b
+            Mb = p.M_b
             mu = Mb + 25. + 5.*np.log10( (1+ z2)* self.transverse_distance(z1) )
         else:
             # This is useful if only SN data is needed to be used
@@ -100,63 +100,61 @@ class Cosmology(object):
         return mu
     
     # This is to provide the Mb alone
-    def Abs_M(self):
+    def Abs_M(self,parameters):
+        p = self.param(parameters)
         if self.Mbsample:
-            Mb = self.M_b
+            Mb = p.M_b
         else:
             # This is useful if only SN data is needed to be used
             Mb = -19.05
         return Mb
 
-    def z_rec(self):
+    def z_rec(self,parameters):
         '''
         redshift of recombination, from Hu & Sugiyama 1996 fitting formula
         '''
+        p = self.param(parameters)
         
-        omega_b = self.Omega_b*(self.H_0/100.)**2.
-        omega_m = self.Omega_m*(self.H_0/100.)**2. + omega_b
+        omega_b = p.Omega_b*(p.H0/100.)**2.
+        omega_m = p.Omega_m*(p.H0/100.)**2. + omega_b
         g1 = 0.0738*omega_b**(-0.238)/(1.+39.5*omega_b**0.763)
         g2 = 0.560/(1.+21.1*omega_b**1.81)
         return 1048.*(1.+0.00124*omega_b**(-0.738))*(1.+g1*omega_m**g2)
 
-    def rs(self,z):
+    def rs(self,parameters,z):
         '''
         sound horizon at z, the variable is x = ln(a)
         '''
-        omega_b = self.Omega_b*(self.H_0/100.)**2.
+        p = self.param(parameters)
+        omega_b = p.Omega_b*(p.H0/100.)**2.
         Rs = 31500./(2.7255/2.7)**4. #3./4./2.47282 *1e+05   # just photons are coupled to baryons
-        return self.clight/self.H_0 * quad(func=lambda x: np.exp(-x)/(self.expansion_rate(np.exp(-x)-1.)*np.sqrt(3.*(1. + Rs * omega_b * np.exp(x) )) ), a = np.log(1e-40) , b = np.log(1./(1.+z)) , limit=100 )[0]
+        return self.clight/p.H0 * quad(func=lambda x: np.exp(-x)/(self.expansion_rate(np.exp(-x)-1.)*np.sqrt(3.*(1. + Rs * omega_b * np.exp(x) )) ), a = np.log(1e-40) , b = np.log(1./(1.+z)) , limit=100 )[0]
 
 
-    def rs2(self,z):
+    def rs2(self,parameters,z):
         '''
         sound horizon at z, the variable is x = a
         '''
-        omega_b = self.Omega_b*(self.H_0/100.)**2.
+        p = self.param(parameters)
+        omega_b = p.Omega_b*(p.H0/100.)**2.
         Rs = 31500./(2.7255/2.7)**4. #3./4./2.47282 *1e+05   # just photons are coupled to baryons
-        return self.clight/self.H_0 * quad(func=lambda x: 1./(x**2. * self.expansion_rate(1./x - 1.)*np.sqrt(3.*(1. + Rs * omega_b * x )) ), a = 0 , b = 1./(1. + z))[0]
+        return self.clight/p.H0 * quad(func=lambda x: 1./(x**2. * self.expansion_rate(1./x - 1.)*np.sqrt(3.*(1. + Rs * omega_b * x )) ), a = 0 , b = 1./(1. + z))[0]
     
 
 class wCDM(Cosmology):
 
-    def __init__(self, parameters,rdsample=False,Obsample=False,Mbsample=False):
-        super().__init__(parameters,rdsample,Obsample,Mbsample)
-        self.H_0 = parameters[0]
-        self.Omega_m = parameters[1]
-        self.Omega_b = 0.0
-        self.Omega_k = 0.0
-        self.w_0 = parameters[2]
-        self.w_a = 0.0
-        self.params = ["H0", "Omega_m", "w"]
-        self.labels = ["$H_0$", "$\Omega_m$", "$w$"]
-        self.priors = [[61.0,76.0],[0.1,0.5],[-2.5,0.5]]
+    def __init__(self, params,prior_file=None):
+        super().__init__(params,prior_file)
+        
     
-    def dark_energy_f(self, z):
-       return np.exp(3.*(-self.w_a + self.w_a/(1. + z) + (1. + self.w_0 + self.w_a)*np.log(1. + z)))
+    def dark_energy_f(self, parameters, z):
+        p = self.param(parameters)
+        return np.exp(3.*(-p.w_a + p.w_a/(1. + z) + (1. + p.w_0 + p.w_a)*np.log(1. + z)))
     
-    def dark_energy_w(self, z):
+    def dark_energy_w(self,parameters, z):
+        p = self.param(parameters)
         a = self.a(z)
-        return self.w_0 + self.w_a*(1-a)
+        return p.w_0 + p.w_a*(1-a)
     
 class LCDM(wCDM):
     def __init__(self, parameters,rdsample=False,Obsample=False,Mbsample=False):

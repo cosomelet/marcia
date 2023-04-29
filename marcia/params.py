@@ -1,6 +1,11 @@
 import toml
 import os
 
+class DictToObject:
+    def __init__(self, dictionary):
+        for key, value in dictionary.items():
+            setattr(self, key, value)
+
 class Params:
 
     def __init__(self,parameters,filepath=None):
@@ -14,6 +19,16 @@ class Params:
         
         self.parameters = parameters
         check = self.check_params
+
+    def __call__(self,parameters):
+        param_dic = {}
+        for i,param in enumerate(self.parameters):
+            param_dic[param] = parameters[i]
+        final_param = dict(param_dic.items() | self.Defaults.items())
+        return DictToObject(final_param)
+        
+    
+        
 
     @property
     def check_params(self):
