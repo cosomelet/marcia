@@ -50,9 +50,15 @@ class Cosmology(object):
         return 1. / (1. + z)
 
     def dark_energy_f(self,parameters, z):
+        """Part of sub class"""
         pass
 
     def dark_energy_w(self,parameters, z):
+        """Part of sub class"""
+        pass
+
+    def transverse_distance(self,parameters,z):
+        """Part of sub class"""
         pass
     
     def hubble_rate(self,parameters, z):
@@ -65,16 +71,6 @@ class Cosmology(object):
         Hofz = p.H0*np.sqrt( E2 )
         return np.nan_to_num(Hofz)
 
-    def transverse_distance(self,parameters, z):
-        # Use this print, in case needed for Error_handling.
-        # print ''
-        def Ly(y,t):
-            # Here this could be replaced with expansion_rate_int if needed 
-            return 1./self.hubble_rate(parameters,t)
-
-        y=it.odeint(Ly,0.0,z)
-        tint = np.array(y[:,0])
-        return np.nan_to_num( self.clight* tint)
        
 
     #To define the value of r_d using the Aubourg15 formulae
@@ -166,149 +162,129 @@ class wCDM(Cosmology):
         a = self.a(z)
         return p.w0 + p.wa*(1-a)
     
+    def transverse_distance(self,parameters, z):
+        # Use this print, in case needed for Error_handling.
+        # print ''
+        def Ly(y,t):
+            # Here this could be replaced with expansion_rate_int if needed 
+            return 1./self.hubble_rate(parameters,t)
+
+        y=it.odeint(Ly,0.0,z)
+        tint = np.array(y[:,0])
+        return np.nan_to_num( self.clight* tint)
+    
 class LCDM(wCDM):
     def __init__(self, parameters,prior_file=None):
         super().__init__(parameters,prior_file)
 
-# class kLCDM(wCDM,rdsample=False,Obsample=False,Mbsample=False):
-#     def __init__(self, parameters,rdsample,Obsample,Mbsample):
-#         super().__init__(parameters)
-#         self.H_0 = parameters[0]
-#         self.Omega_m = parameters[1]
-#         self.Omega_b = 0.0
-#         self.Omega_k = parameters[2]
-#         self.w_0 = -1.0
-#         self.w_a = 0.0
-#         self.params = ["H0", "Omega_m", "Omega_k"]
-#         self.labels = ["$H_0$", "$\Omega_m$", "$\Omega_k$"]
-#         self.priors = [[61.0,76.0],[0.1,0.5],[-0.7,0.6]]
+class CPL(wCDM):
+    def __init__(self, parameters,prior_file=None):
+        super().__init__(parameters,prior_file)
 
-# class kwCDM(wCDM):
-#     def __init__(self, parameters,rdsample=False,Obsample=False,Mbsample=False):
-#         super().__init__(parameters,rdsample,Obsample,Mbsample)
-#         self.H_0 = parameters[0]
-#         self.Omega_m = parameters[1]
-#         self.Omega_b = 0.0
-#         self.Omega_k = parameters[2]
-#         self.w_0 = parameters[3]
-#         self.w_a = 0.0
-#         self.params = ["H0", "Omega_m", "Omega_k", "w"]
-#         self.labels = ["$H_0$", "$\Omega_m$", "$\Omega_k$", "$w$"]
-#         self.priors = [[61.0,76.0],[0.1,0.5],[-0.4,0.2],[-1.2,-0.5]]
+class CPL3(wCDM):
+    def __init__(self, parameters,prior_file=None):
+        super().__init__(parameters,prior_file)
 
-# class CPL(wCDM):
-#     def __init__(self, parameters,rdsample=False,Obsample=False,Mbsample=False):
-#         super().__init__(parameters,rdsample,Obsample,Mbsample)
-#         self.H_0 = parameters[0]
-#         self.Omega_m = parameters[1]
-#         self.Omega_b = 0.0
-#         self.Omega_k = 0.0
-#         self.w_0 = parameters[2]
-#         self.w_a = parameters[3]
-#         self.params = ["H0", "Omega_m", "w0", "wa"]
-#         self.labels = ["$H_0$", "$\Omega_m$", "$w_0$", "$w_a$"]
-#         self.priors = [[61.0,76.0],[0.1,0.5],[-2.5,0.5],[-10.0,10.0]]
-
-# class kCPL(wCDM):
-#     def __init__(self, parameters,rdsample=False,Obsample=False,Mbsample=False):
-#         super().__init__(parameters,rdsample,Obsample,Mbsample)
-#         self.H_0 = parameters[0]
-#         self.Omega_m = parameters[1]
-#         self.Omega_b = 0.0
-#         self.Omega_k = parameters[2]
-#         self.w_0 = parameters[3]
-#         self.w_a = parameters[4]
-#         self.params = ["H0", "Omega_m", "Omega_k", "w0", "wa"]
-#         self.priors = [[61.0,76.0],[0.1,0.5],[-0.5,0.4],[-2.5,0.5],[-10.0,10.0]]
-#         self.labels = ["$H_0$", "$\Omega_m$", "$\Omega_k$", "$w_0$", "$w_a$"]
-
-
-# class ThreeCPL(Cosmology):
-#     def __init__(self, parameters,rdsample=False,Obsample=False,Mbsample=False):
-#         super().__init__(parameters,rdsample,Obsample,Mbsample) 
-#         self.H_0 = parameters[0]
-#         self.Omega_m = parameters[1]
-#         self.Omega_b = 0.0
-#         self.Omega_k = 0.0
-#         self.w_0 = parameters[2]
-#         self.w_a = parameters[3]
-#         self.w_b = 2.*parameters[4]
-#         self.w_c = 6.*parameters[5]
-#         self.w_d = 24.*0.0
-#         self.params = ["H0", "Omega_m", "w0", "wa", "wb", "wc"]
-#         self.labels = ["$H_0$", "$\Omega_m$", "$w_0$", "$w_a$", "$w_b$", "$w_c$"]
-#         self.priors = [[61.0,76.0],[0.1,0.5],[-3.0,0.5],[-30.,20.],[-50.,120.],[-150.,80.]] 
-
-#     def dark_energy_f(self, z):
-#         a = self.a(z)
-#         intwz = -3.*((self.w_a + self.w_b/2. +self.w_c/6. + self.w_d/24.)*pow(a,3.)*pow(1.-a,1.) +
-#                             (3.*self.w_a + 7.*self.w_b/4. + 7.*self.w_c/12. + 7.*self.w_d/48)*pow(a,2.)*pow(1.-a,2.) +
-#                             (3.*self.w_a + 2.*self.w_b + 13.*self.w_c/18. + 13.*self.w_d/72.)*pow(a,1.)*pow(1.-a,3.) +
-#                             (self.w_a + 3.*self.w_b/4. + 11.*self.w_c/36. + 25.*self.w_d/288.)*pow(1.-a,4.) +
-#                             (1. + self.w_0 + self.w_a + self.w_b/2. + self.w_c/6. + self.w_d/24.)*np.log(a))
-#         if intwz > 10.0:
-#             return np.exp(10)
-#         else:
-#             return np.exp(intwz)
+    def dark_energy_f(self,parameters, z):
+        p = self.param(parameters)
+        a = self.a(z)
+        intwz = -3.*((p.wa + p.wb/2. +p.wc/6. + p.wd/24.)*pow(a,3.)*pow(1.-a,1.) +
+                            (3.*p.wa + 7.*p.wb/4. + 7.*p.wc/12. + 7.*p.wd/48)*pow(a,2.)*pow(1.-a,2.) +
+                            (3.*p.wa + 2.*p.wb + 13.*p.wc/18. + 13.*p.wd/72.)*pow(a,1.)*pow(1.-a,3.) +
+                            (p.wa + 3.*p.wb/4. + 11.*p.wc/36. + 25.*p.wd/288.)*pow(1.-a,4.) +
+                            (1. + p.w0 + p.wa + p.wb/2. + p.wc/6. + p.wd/24.)*np.log(a))
+        if intwz > 10.0:
+            return np.exp(10)
+        else:
+            return np.exp(intwz)
         
-#     def dark_energy_w(self, z):
-#         a = self.a(z)
-#         return self.w_0 + self.w_a*(1.-a) + self.w_b*pow((1.-a),2.)/2. + self.w_c*pow((1.-a),3.)/6. + self.w_d * pow((1.-a),4.)/24.
-        
-        
-# class k3CPL(ThreeCPL):
-#     def __init__(self, parameters,rdsample=False,Obsample=False,Mbsample=False):
-#         super().__init__(parameters,rdsample,Obsample,Mbsample)
-#         self.H_0 = parameters[0]
-#         self.Omega_m = parameters[1]
-#         self.Omega_b = 0.0
-#         self.Omega_k = parameters[2]
-#         self.w_0 = parameters[3]
-#         self.w_a = parameters[4]
-#         self.w_b = 2.*parameters[5]
-#         self.w_c = 6.*parameters[6]
-#         self.w_d = 24.*0.0
-#         self.params = ["H0", "Omega_m", "Omega_k", "w0", "wa", "wb", "wc"]
-#         self.labels = ["$H_0$", "$\Omega_m$", "$\Omega_k$", "$w_0$", "$w_a$", "$w_b$", "$w_c$"]
-#         self.priors = [[61.0,76.0],[0.1,0.5],[-0.5,0.4],[-3.0,0.5],[-50.,40.],[-100.,200.],[-200.,100.]]
+    def dark_energy_w(self, parameters,z):
+        p = self.param(parameters)
+        a = self.a(z)
+        return p.w0 + p.wa*(1.-a) + p.wb*pow((1.-a),2.)/2. + p.wc*pow((1.-a),3.)/6. + p.wd * pow((1.-a),4.)/24.
 
-# class XCDM(Cosmology):
-#     def __init__(self, parameters,rdsample=False,Obsample=False,Mbsample=False):
-#         super().__init__(parameters,rdsample,Obsample,Mbsample)
-#         self.H_0 = parameters[0]
-#         self.Omega_m = parameters[1]
-#         self.Omega_b = 0.0
-#         self.Omega_k = 0.0
-#         self.f_0 = 1.0 #parameters[2]
-#         self.f_a = parameters[2]
-#         self.f_b = parameters[3]
-#         self.f_c = parameters[4]
-#         self.params = ["H0", "Omega_m", "fa", "fb", "fc"]
-#         self.labels = ["$H_0$", "$\Omega_m$", "$f_a$", "$f_b$", "$f_c$"]
-#         self.priors = [[61.0,76.0],[0.1,0.5],[-20.,20.],[-50.,50.],[-50.,50.]]
+class XCDM(wCDM):
+    def __init__(self, parameters,prior_file=None):
+        super().__init__(parameters,prior_file)
     
-#     def dark_energy_f(self, z):
-#         a = self.a(z)
-#         return self.f_0 + self.f_a*pow((1.-a),1.) + self.f_b*pow((1.-a),2.) + self.f_c*pow((1.-a),3.)
+    def dark_energy_f(self,parameters,z):
+        p = self.param(parameters)
+        a = self.a(z)
+        return p.f0 + p.fa*pow((1.-a),1.) + p.fb*pow((1.-a),2.) + p.fc*pow((1.-a),3.)
 
 
-#     def dark_energy_w(self, z):
-#         a = self.a(z)
-#         return -1. + ( self.f_a * pow(1. + z,2) + z * (3.* self.f_c * z + 2. * self.f_b * (1. + z)) ) / ( 3. * (self.f_0 * pow(1. + z,3) + z * ( self.f_a * pow(1. + z,2) + z * ( self.f_b * (1. + z) + z * self.f_c ) ) ))
+    def dark_energy_w(self,parameters, z):
+        p = self.param(parameters)
+        a = self.a(z)
+        return -1. + ( p.fa * pow(1. + z,2) + z * (3.* p.fc * z + 2. * p.fb * (1. + z)) ) / ( 3. * (p.f0 * pow(1. + z,3) + z * ( p.fa * pow(1. + z,2) + z * ( p.fb * (1. + z) + z * p.fc ) ) ))
+
+class kwCDM(wCDM):
+    def __init__(self, parameters,prior_file=None):
+        super().__init__(parameters,prior_file)
+    
+    def transverse_distance(self, parameters, z):
+        p = self.param(parameters)
+        def Ly(y,t):
+            return 1./self.hubble_rate(parameters,t)
+
+        y=it.odeint(Ly,0.0,z)
+        tint = np.array(y[:,0])
+        if p.Omega_k > 0.0:
+            return np.nan_to_num( self.clight/(np.sqrt(p.Omega_k)*p.H0)*np.sinh(np.sqrt(p.Omega_k) * p.H0*tint))
+
+        elif p.Omega_k < 0.0:
+            return np.nan_to_num( self.clight/(np.sqrt(abs(p.Omega_k))*p.H0)*np.sin((np.sqrt(abs(p.Omega_k)))* p.H0* tint))
+            
+        elif self.Omega_k == 0.0:
+            return np.nan_to_num( self.clight* tint)
+    
+
+class kLCDM(kwCDM):
+    def __init__(self, parameters,prior_file=None):
+        super().__init__(parameters,prior_file)
+
+class kCPL(kwCDM):
+    def __init__(self, parameters,prior_file=None):
+        super().__init__(parameters,prior_file)
+    
+        
+class kCPL3(CPL3):
+    def __init__(self, parameters,prior_file=None):
+        super().__init__(parameters,prior_file)
+    
+    def transverse_distance(self, parameters, z):
+        p = self.param(parameters)
+        def Ly(y,t):
+            return 1./self.hubble_rate(parameters,t)
+
+        y=it.odeint(Ly,0.0,z)
+        tint = np.array(y[:,0])
+        if p.Omega_k > 0.0:
+            return np.nan_to_num( self.clight/(np.sqrt(p.Omega_k)*p.H0)*np.sinh(np.sqrt(p.Omega_k) * p.H0*tint))
+
+        elif p.Omega_k < 0.0:
+            return np.nan_to_num( self.clight/(np.sqrt(abs(p.Omega_k))*p.H0)*np.sin((np.sqrt(abs(p.Omega_k)))* p.H0* tint))
+            
+        elif self.Omega_k == 0.0:
+            return np.nan_to_num( self.clight* tint)
 
     
-# class kXCDM(XCDM):
-#     def __init__(self, parameters,rdsample=False,Obsample=False,Mbsample=False):
-#         super().__init__(parameters,rdsample,Obsample,Mbsample)
-#         self.H_0 = parameters[0]
-#         self.Omega_m = parameters[1]
-#         self.Omega_b = 0.0
-#         self.Omega_k = parameters[2]
-#         self.f_0 = 1.0 #parameters[2]
-#         self.f_a = parameters[3]
-#         self.f_b = parameters[4]
-#         self.f_c = parameters[5]
-#         self.params = ["H0", "Omega_m", "Omega_k", "fa", "fb", "fc"]
-#         self.labels = ["$H_0$", "$\Omega_m$", "$\Omega_k$", "$f_a$", "$f_b$", "$f_c$"]
-#         self.priors = [[61.0,76.0],[0.1,0.5],[-0.5,0.4],[-20.,20.],[-50.,50.],[-50.,50.]]
+class kXCDM(XCDM):
+    def __init__(self, parameters,prior_file=None):
+        super().__init__(parameters,prior_file)
+    
+    def transverse_distance(self, parameters, z):
+        p = self.param(parameters)
+        def Ly(y,t):
+            return 1./self.hubble_rate(parameters,t)
 
+        y=it.odeint(Ly,0.0,z)
+        tint = np.array(y[:,0])
+        if p.Omega_k > 0.0:
+            return np.nan_to_num( self.clight/(np.sqrt(p.Omega_k)*p.H0)*np.sinh(np.sqrt(p.Omega_k) * p.H0*tint))
+
+        elif p.Omega_k < 0.0:
+            return np.nan_to_num( self.clight/(np.sqrt(abs(p.Omega_k))*p.H0)*np.sin((np.sqrt(abs(p.Omega_k)))* p.H0* tint))
+            
+        elif self.Omega_k == 0.0:
+            return np.nan_to_num( self.clight* tint)
