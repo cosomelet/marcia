@@ -274,6 +274,7 @@ class kXCDM(XCDM):
         super().__init__(parameters,prior_file)
     
     def transverse_distance(self, parameters, z):
+        """transverse distance in Mpc/h"""
         p = self.param(parameters)
         def Ly(y,t):
             return 1./self.hubble_rate(parameters,t)
@@ -288,3 +289,4 @@ class kXCDM(XCDM):
             
         elif self.Omega_k == 0.0:
             return np.nan_to_num( self.clight* tint)
+        
