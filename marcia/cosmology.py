@@ -21,7 +21,7 @@ class Cosmology(object):
         # model = [] with rd, mb ,ob
         # params = ['ho'] 
         self.param = Params(params,prior_file)
-        self.priors = self.param.Priors
+        self.priors = self.param.Priors 
         self.labels = self.param.Labels
 
 
