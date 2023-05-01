@@ -1,92 +1,96 @@
-
 import os
 import sys
 import cmath
 import numpy as np
 from scipy.integrate import quad
 import scipy.constants as const
-
 import time
 
 from marcia import Data
 
 
-# In this file we compute comsological quantities such as expansion rate and sound horizon etc.
-
 class Kernels(object):
     """
         General Gaussian process modelling that all the specific kernels must be inherited from.
         Inputs would be the appropriate amplitude and scaling parameters needed for the particular model. 
-
         """
 
     def __init__(self, model, parameters, data):
-        # The data must contain the list/lists of x-axes.
+
+        self.clight = 299792458. / 1000.  # km/s
+        self.kernels = ['SE', 'M92', 'M72']  # Possible kernel choices
+        # The data must contain the list/lists of x-axes
         self.data = data
-        # The possible model cases are ['SE', 'M92', 'M72'] etc. 
+        self.ndata = len(data)
+        # The possible model cases are ['SE', 'SE', 'SE'] etc. for 3 tasks and ['SE', 'SE', 'SE', 'self-scaled'] for 3 tasks and a self-scaled GP
         self.model = model
+        self.nmodel = len(model)
         self.params = parameters
         self.nparams = len(parameters)
 
-        if len(self.data) != len(self.model):
-            print('Error: data length does not match the number of kernels')
-
-        if 'self-scaled' in model and (len(model) == len(parameters)+1):
+        if 'self-scaled' in self.model and (self.nparams == self.nmodel):
+            self.ntasks = self.nmodel - 1
             self.model = self.model[:-1]
-            # Implying that the scale length for all the datasets is set to be the same, we need sigma_f equal to the number of GPs and one l_f
-            for i in range(len(parameters) - len(model)):
+            # Implying that the scale length for all the datasets is set to be the same, we need sigma_f equal to the number of GPs and one l_s
+            for i in range(self.ntasks-1):
                 self.params = np.append(self.params, parameters[-1])
-            self.params = np.transpose(np.reshape(np.params, (len())))
-        elif self.params != 2*len(model):
-            # We need atleast two paramters per GP: {sigma_f, l_f}
-            print('Error: Number of parameters does not match the model specifications')
 
-        # Everytime this is initialised I set the sigma_f_check and l_check to avoid computing the
-        # covariance matrices for every single call with same hyperparameters
-        self.sigma_f_check = -1.0
-        self.l_check = -1.0
+        elif 'self-scaled' not in model and (self.nparams == 2*len(self.model)):
+            # We have the number of parameters matching the number of GP tasks
+            self.ntasks = len(self.model)
 
-        self.clight = 299792458. / 1000.
-        # Maybe here I would like to add a first check for verifying number of parameters.
-        if self.model in ['SE', 'M92', 'M72'] and self.nparams == 2:
-            self.Omega_k = 0.0
-            self.s_f = pow(10., parameters[0])
-            self.l = pow(10., parameters[1])
-            self.labels = ["$\log_{10}(\sigma_f)$", "$\log_{10}(l)$"]
-            self.priors = [[-1.0, 3.5], [-4.0, 2.0]]
-        elif self.model == 'kernel':
-            print('Yet to define a general model ')
-        else:
+        elif 'self-scaled' not in model and (self.nparams != 2*len(model)):
+            # We need atleast two paramters per GP task: {sigma_f, l_s}
             print('Error: Number of parameters does not match the model specifications')
             sys.exit(0)
 
-        if len(model) == 4:
-            self.Omega_k = parameters[-3]
-            self.labels = np.append(self.labels, ["$\Omega_k$"])
-            self.priors = np.concatenate((self.priors, [[-0.5, 0.5]]), axis=0)
-            self.r_d = parameters[-2]
-            self.labels = np.append(self.labels, ["$r_d$"])
-            self.priors = np.concatenate((self.priors, [[100., 180.]]), axis=0)
-            self.rdsample = 'True'
-            self.M_b = parameters[-1]
-            self.labels = np.append(self.labels, ["$M_b$"])
-            self.priors = np.concatenate((self.priors, [[-21., -18.]]), axis=0)
-            self.Mbsample = 'True'
+        # Reshaping the parameters to be a 2D array of shape (2, ntasks)
+        self.params = np.transpose(np.reshape(np.params, (self.ntasks, 2)))
 
-        self.DetCovMat = 0.0
-        self.InvCovMat = self.Inv_Cov_Mat()
-        self.InvCovMatCC = np.dot(self.InvCovMat, self.data_cc.cc).T
-        self.Omega_m = 0.3  # @sandeep review this
-        self.H_0 = 70.0  # @sandeep review this
+        # To create a dictionary of paramters and datasets
+        self.data_f = {}
+        self.sig_f = {}
+        self.l_s = {}
+        self.kernel_f = {}
 
-    # This is to define the different possible kernel choices
-    def kernel(self, x1, x2):
-        if self.model == 'SE':
-            return self.s_f**2. * np.exp(- ((x1-x2)**2.)/(2. * self.l**2.))
-        elif self.model == 'M92':
-            return self.s_f**2. * np.exp(-np.sqrt(((x1-x2)**2.)/(2. * self.l**2.)))
-        elif self.model == 'M72':
-            return self.s_f**2. * np.exp(-np.sqrt(((x1-x2)**2.)/(2. * self.l**2.)))
+        if len(self.data) != self.ntasks:
+            print('Error: data length does not match the number of kernels')
+            sys.exit(0)
+        else:
+            for i in range(self.ntasks):
+                if self.model[i] in self.kernels and len(self.params[i]) == 2:
+                    self.kernel_f['task_{0}'.format(i)] = self.model[i]
+                    self.sig_f['task_{0}'.format(i)] = self.params[i, 0]
+                    self.l_s['task_{0}'.format(i)] = self.params[i, 1]
+                    # To create a dictionary of data
+                    self.data_f['task_{0}'.format(i)] = self.data[i]
+
+                else:
+                    print('Error: model or parameters not specified correctly')
+                    sys.exit(0)
+
+        # Everytime this is initialised I set the sigma_f_check and l_check to avoid computing the
+        # covariance matrices for every single call with same hyperparameters
+        # self.sigma_f_check = -1.0
+        # self.l_check = -1.0
+        # self.labels = ["$\log_{10}(\sigma_f)$", "$\log_{10}(l)$"]
+
+        self.CovMat = self.Cov_Mat()
+
+    # To define the covariance matrix of the data
+    def Cov_Mat(self):
+        for key_1, data_1 in self.data_f.items():
+            for key_2, data_2 in self.data_f.items():
+
+                # This is to define the different possible kernel choices
+
+    def kernel(self, model, x1, x2):
+        if model == 'SE':
+            return self.s_f**2. * np.exp(- ((x1-x2)**2.)/(2. * self.l_s**2.))
+        elif model == 'M92':
+            return self.s_f**2. * np.exp(-np.sqrt(((x1-x2)**2.)/(2. * self.l_s**2.)))
+        elif model == 'M72':
+            return self.s_f**2. * np.exp(-np.sqrt(((x1-x2)**2.)/(2. * self.l_s**2.)))
 
     # To define the all the basis functions of all the possible kernels
     def basis_function(self, x1, x2):
@@ -97,39 +101,39 @@ class Kernels(object):
         elif self.model == 'M72':
             return self.s_f**2. * np.exp(-np.sqrt(((x1-x2)**2.)/(2. * self.l**2.)))
 
-    # Covarinace matrix of data
-    def Inv_Cov_Mat(self):
-        z_CC = self.data_cc.z
-        Sigma_CC = np.diag(self.data_cc.dcc**2)
-        cmatrix = np.reshape([0.0]*(len(z_CC)*len(z_CC)),
-                             (len(z_CC), len(z_CC)))
-        for i in range(len(z_CC)):
-            for j in range(i+1):
-                # print self.kernel(z_CC[i],z_CC[j])
-                cmatrix[i, j] = self.kernel(z_CC[i], z_CC[j])
-        out = cmatrix.T + cmatrix
-        np.fill_diagonal(out, np.diag(cmatrix))
-        covmat = np.array(out) + np.array(Sigma_CC)
-        self.DetCovMat = np.linalg.det(covmat)
-        return np.linalg.inv(covmat)
+    # # Covarinace matrix of data
+    # def Inv_Cov_Mat(self):
+    #     z_CC = self.data_cc.z
+    #     Sigma_CC = np.diag(self.data_cc.dcc**2)
+    #     cmatrix = np.reshape([0.0]*(len(z_CC)*len(z_CC)),
+    #                          (len(z_CC), len(z_CC)))
+    #     for i in range(len(z_CC)):
+    #         for j in range(i+1):
+    #             # print self.kernel(z_CC[i],z_CC[j])
+    #             cmatrix[i, j] = self.kernel(z_CC[i], z_CC[j])
+    #     out = cmatrix.T + cmatrix
+    #     np.fill_diagonal(out, np.diag(cmatrix))
+    #     covmat = np.array(out) + np.array(Sigma_CC)
+    #     self.DetCovMat = np.linalg.det(covmat)
+    #     return np.linalg.inv(covmat)
 
-    # Covariance matrix of prediction star
-    def Cov_Mat_S(self, x1):
-        z_CC = self.data_cc.z
-        cmat_Star = [0.0]*(len(z_CC))
-        for i in range(len(z_CC)):
-            cmat_Star[i] = self.kernel(x1, z_CC[i])
-        return cmat_Star
+    # # Covariance matrix of prediction star
+    # def Cov_Mat_S(self, x1):
+    #     z_CC = self.data_cc.z
+    #     cmat_Star = [0.0]*(len(z_CC))
+    #     for i in range(len(z_CC)):
+    #         cmat_Star[i] = self.kernel(x1, z_CC[i])
+    #     return cmat_Star
 
-    # Covariance matrix of prediction star
-    def Cov_Mat_SS(self, x1):
-        zp = [x1]
-        # np.linspace(0.,2.5,50)
-        cmatrix = np.reshape([0.0]*(len(zp)*len(zp)), (len(zp), len(zp)))
-        for i in range(len(zp)):
-            for j in range(i+1):
-                cmatrix[i, j] = self.kernel(zp[i], zp[j])
-        cmat_Star_Star = cmatrix.T + cmatrix
-        np.fill_diagonal(cmat_Star_Star, np.diag(cmatrix))
+    # # Covariance matrix of prediction star
+    # def Cov_Mat_SS(self, x1):
+    #     zp = [x1]
+    #     # np.linspace(0.,2.5,50)
+    #     cmatrix = np.reshape([0.0]*(len(zp)*len(zp)), (len(zp), len(zp)))
+    #     for i in range(len(zp)):
+    #         for j in range(i+1):
+    #             cmatrix[i, j] = self.kernel(zp[i], zp[j])
+    #     cmat_Star_Star = cmatrix.T + cmatrix
+    #     np.fill_diagonal(cmat_Star_Star, np.diag(cmatrix))
 
-        return cmat_Star_Star
+    #     return cmat_Star_Star
