@@ -155,6 +155,10 @@ class Cosmology_base(object):
 class wCDM(Cosmology_base):
     def __init__(self, params,prior_file=None):
         super().__init__(params,prior_file)
+        self.__check_mandatory_parameters__()
+
+    def __check_mandatory_parameters__(self):
+        assert 'w' in self.param.parameters, 'wCDM: w is not defined in the parameters'
         
     
     def dark_energy_f(self, parameters, z):
@@ -180,6 +184,9 @@ class wCDM(Cosmology_base):
 class LCDM(wCDM):
     def __init__(self, parameters,prior_file=None):
         super().__init__(parameters,prior_file)
+    
+    def __check_mandatory_parameters__(self):
+        assert 'H0' in self.param.parameters, 'LCDM: H0 is not defined in the parameters'
 
 class CPL(wCDM):
     def __init__(self, parameters,prior_file=None):
