@@ -83,8 +83,9 @@ class Kernels(object):
 
     # To define the covariance matrix of the data
     def Cov_Mat(self):
-        for key_1, data_1 in self.data_f.items():
-            for key_2, data_2 in self.data_f.items():
+        #for key_1, data_1 in self.data_f.items():
+        #    for key_2, data_2 in self.data_f.items():
+        raise NotImplementedError
 
                 
 
