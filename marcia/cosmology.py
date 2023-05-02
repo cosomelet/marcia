@@ -1,16 +1,20 @@
 import numpy as np
-import scipy.integrate
 import scipy.integrate as it
 from scipy.integrate import quad
-import scipy.constants as const
-import sys
-import time
-import cmath
-import os
-from marcia.database import Data
 from marcia.params import Params
 
-class Cosmology(object):
+
+def Cosmology(model,parameters,prior_file=None):
+    models = ['LCDM','wCDM','CPL','CPL3','kwCPL','kCPL3','kLCDM','XCDM','kXCDM']
+    if model not in models:
+        raise ValueError(
+            f"""Requested model not available
+            Available models are: {models}
+            """
+            )
+    return globals()[model](parameters,prior_file)
+
+class Cosmology_base(object):
     """
         General background theory that all the theories must be inherited from.
         Inputs would be the appropriate cosmological parameters needed for the particular model. 
@@ -148,7 +152,7 @@ class Cosmology(object):
         return self.clight/p.H0 * quad(func=lambda x: 1./(x**2. * self.expansion_rate(1./x - 1.)*np.sqrt(3.*(1. + Rs * omega_b * x )) ), a = 0 , b = 1./(1. + z))[0]
     
 
-class wCDM(Cosmology):
+class wCDM(Cosmology_base):
     def __init__(self, params,prior_file=None):
         super().__init__(params,prior_file)
         
