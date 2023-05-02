@@ -20,7 +20,9 @@ class Kernels(object):
     def __init__(self, model, parameters, data):
 
         self.clight = 299792458. / 1000.  # km/s
-        self.kernels = ['SE', 'M92', 'M72'] # Possible kernel choices
+
+        self.kernels = ['SE', 'M92', 'M72']  # Possible kernel choices
+
         # The data must contain the list/lists of x-axes
         self.data = data
         self.ndata = len(data)
@@ -83,9 +85,11 @@ class Kernels(object):
     def Cov_Mat(self):
         for key_1, data_1 in self.data_f.items():
             for key_2, data_2 in self.data_f.items():
+
                 
 
     # This is to define the different possible kernel choices
+
     def kernel(self, model, x1, x2):
         if model == 'SE':
             return self.s_f**2. * np.exp(- ((x1-x2)**2.)/(2. * self.l_s**2.))
