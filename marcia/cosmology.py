@@ -158,7 +158,7 @@ class wCDM(Cosmology_base):
         self.__check_mandatory_parameters__()
 
     def __check_mandatory_parameters__(self):
-        assert 'w' in self.param.parameters, 'wCDM: w is not defined in the parameters'
+        assert 'w0' in self.param.parameters, 'wCDM: w0 is not defined in the parameters'
         
     
     def dark_energy_f(self, parameters, z):
