@@ -191,6 +191,9 @@ class LCDM(wCDM):
 class CPL(wCDM):
     def __init__(self, parameters,prior_file=None):
         super().__init__(parameters,prior_file)
+    
+    def __check_mandatory_parameters__(self):
+        assert 'wa' in self.param.parameters, 'CPL: wa is not defined in the parameters'
 
 class CPL3(wCDM):
     def __init__(self, parameters,prior_file=None):
