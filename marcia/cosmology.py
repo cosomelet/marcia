@@ -158,7 +158,10 @@ class wCDM(Cosmology_base):
         self.__check_mandatory_parameters__()
 
     def __check_mandatory_parameters__(self):
+        assert 'H0' in self.param.parameters, 'wCDM: H0 is not defined in the parameters'
         assert 'w0' in self.param.parameters, 'wCDM: w0 is not defined in the parameters'
+        assert 'Omega_m' in self.param.parameters, 'wCDM: Omega_m is not defined in the parameters'
+        assert len(self.param.parameters) == 3, 'wCDM: parameters are not correct'
         
     
     def dark_energy_f(self, parameters, z):
@@ -187,17 +190,32 @@ class LCDM(wCDM):
     
     def __check_mandatory_parameters__(self):
         assert 'H0' in self.param.parameters, 'LCDM: H0 is not defined in the parameters'
+        assert 'Omega_m' in self.param.parameters, 'LCDM: Omega_m is not defined in the parameters'
+        assert len(self.param.parameters) == 2, 'LCDM: parameters are not correct'
 
 class CPL(wCDM):
     def __init__(self, parameters,prior_file=None):
         super().__init__(parameters,prior_file)
     
     def __check_mandatory_parameters__(self):
+        assert 'H0' in self.param.parameters, 'CPL: H0 is not defined in the parameters'
+        assert 'Omega_m' in self.param.parameters, 'CPL: Omega_m is not defined in the parameters'
         assert 'wa' in self.param.parameters, 'CPL: wa is not defined in the parameters'
+        assert 'w0' in self.param.parameters, 'CPL: w0 is not defined in the parameters'
+        assert len(self.param.parameters) == 4, 'CPL: parameters are not correct'
 
 class CPL3(wCDM):
     def __init__(self, parameters,prior_file=None):
         super().__init__(parameters,prior_file)
+    
+    def __check_mandatory_parameters__(self):
+        assert 'H0' in self.param.parameters, 'CPL3: H0 is not defined in the parameters'
+        assert 'Omega_m' in self.param.parameters, 'CPL3: Omega_m is not defined in the parameters'
+        assert 'wa' in self.param.parameters, 'CPL3: wa is not defined in the parameters'
+        assert 'w0' in self.param.parameters, 'CPL3: w0 is not defined in the parameters'
+        assert 'wb' in self.param.parameters, 'CPL3: wb is not defined in the parameters'
+        assert 'wc' in self.param.parameters, 'CPL3: wc is not defined in the parameters'
+        assert len(self.param.parameters) == 6, 'CPL3: parameters are not correct'
 
     def dark_energy_f(self,parameters, z):
         p = self.param(parameters)
@@ -221,6 +239,14 @@ class XCDM(wCDM):
     def __init__(self, parameters,prior_file=None):
         super().__init__(parameters,prior_file)
     
+    def __check_mandatory_parameters__(self):
+        assert 'H0' in self.param.parameters, 'XCDM: H0 is not defined in the parameters'
+        assert 'Omega_m' in self.param.parameters, 'XCDM: Omega_m is not defined in the parameters'
+        assert 'fa' in self.param.parameters, 'XCDM: fa is not defined in the parameters'
+        assert 'fb' in self.param.parameters, 'XCDM: fb is not defined in the parameters'
+        assert 'fc' in self.param.parameters, 'XCDM: fc is not defined in the parameters'
+        assert len(self.param.parameters) == 5, 'XCDM: parameters are not correct'
+    
     def dark_energy_f(self,parameters,z):
         p = self.param(parameters)
         a = self.a(z)
@@ -235,6 +261,14 @@ class XCDM(wCDM):
 class kwCDM(wCDM):
     def __init__(self, parameters,prior_file=None):
         super().__init__(parameters,prior_file)
+
+    def __check_mandatory_parameters__(self):
+        assert 'H0' in self.param.parameters, 'kwCDM: H0 is not defined in the parameters'
+        assert 'Omega_m' in self.param.parameters, 'kwCDM: Omega_m is not defined in the parameters'
+        assert 'Omega_k' in self.param.parameters, 'kwCDM: Omega_k is not defined in the parameters'
+        assert 'w0' in self.param.parameters, 'kwCDM: w0 is not defined in the parameters'
+        assert len(self.param.parameters) == 4, 'kwCDM: parameters are not correct'
+
     
     def transverse_distance(self, parameters, z):
         p = self.param(parameters)
@@ -256,15 +290,39 @@ class kwCDM(wCDM):
 class kLCDM(kwCDM):
     def __init__(self, parameters,prior_file=None):
         super().__init__(parameters,prior_file)
+    
+    def __check_mandatory_parameters__(self):
+        assert 'H0' in self.param.parameters, 'kLCDM: H0 is not defined in the parameters'
+        assert 'Omega_m' in self.param.parameters, 'kLCDM: Omega_m is not defined in the parameters'
+        assert 'Omega_k' in self.param.parameters, 'kLCDM: Omega_k is not defined in the parameters'
+        assert len(self.param.parameters) == 3, 'kLCDM: parameters are not correct'
 
 class kCPL(kwCDM):
     def __init__(self, parameters,prior_file=None):
         super().__init__(parameters,prior_file)
     
+    def __check_mandatory_parameters__(self):
+        assert 'H0' in self.param.parameters, 'kCPL: H0 is not defined in the parameters'
+        assert 'Omega_m' in self.param.parameters, 'kCPL: Omega_m is not defined in the parameters'
+        assert 'Omega_k' in self.param.parameters, 'kCPL: Omega_k is not defined in the parameters'
+        assert 'w0' in self.param.parameters, 'kCPL: w0 is not defined in the parameters'
+        assert 'wa' in self.param.parameters, 'kCPL: wa is not defined in the parameters'
+        assert len(self.param.parameters) == 5, 'kCPL: parameters are not correct'
+    
         
 class kCPL3(CPL3):
     def __init__(self, parameters,prior_file=None):
         super().__init__(parameters,prior_file)
+    
+    def __check_mandatory_parameters__(self):
+        assert 'H0' in self.param.parameters, 'kCPL3: H0 is not defined in the parameters'
+        assert 'Omega_m' in self.param.parameters, 'kCPL3: Omega_m is not defined in the parameters'
+        assert 'Omega_k' in self.param.parameters, 'kCPL3: Omega_k is not defined in the parameters'
+        assert 'w0' in self.param.parameters, 'kCPL3: w0 is not defined in the parameters'
+        assert 'wa' in self.param.parameters, 'kCPL3: wa is not defined in the parameters'
+        assert 'wc' in self.param.parameters, 'kCPL3: wc is not defined in the parameters'
+        assert 'wb' in self.param.parameters, 'kCPL3: wb is not defined in the parameters'
+        assert len(self.param.parameters) == 7, 'kCPL3: parameters are not correct'
     
     def transverse_distance(self, parameters, z):
         p = self.param(parameters)
@@ -286,6 +344,15 @@ class kCPL3(CPL3):
 class kXCDM(XCDM):
     def __init__(self, parameters,prior_file=None):
         super().__init__(parameters,prior_file)
+    
+    def __check_mandatory_parameters__(self):
+        assert 'H0' in self.param.parameters, 'kXCDM: H0 is not defined in the parameters'
+        assert 'Omega_m' in self.param.parameters, 'kXCDM: Omega_m is not defined in the parameters'
+        assert 'Omega_k' in self.param.parameters, 'kXCDM: Omega_k is not defined in the parameters'
+        assert 'fa' in self.param.parameters, 'kXCDM: fa is not defined in the parameters'
+        assert 'fb' in self.param.parameters, 'kXCDM: fb is not defined in the parameters'
+        assert 'fc' in self.param.parameters, 'kXCDM: fc is not defined in the parameters'
+        assert len(self.param.parameters) == 6, 'kXCDM: parameters are not correct'
     
     def transverse_distance(self, parameters, z):
         """transverse distance in Mpc/h"""
