@@ -9,7 +9,7 @@ __datapath__ = os.path.join(__path__,'../' 'Data')
 
 class Data:
 
-    def __init__(self,data):
+    def __init__(self,data,file=0,Lambda=1,b=1,sigma_sys=0.7571):
         datalist = ['CC','BAO','GR','Lya','GRB','SNE','QSA']
         if type(data) is str:
             assert data in datalist, f'{data} is not in {datalist}'
@@ -20,6 +20,12 @@ class Data:
             self.data = data
         else:
             raise TypeError(f'{data} is not a valid type')
+        
+        self.file = file
+        self.Lambda = Lambda
+        self.b = b
+        self.sigma_sys = sigma_sys
+
         
        # self.x,self.y,self.covar = self.get_data()
     def __block_matrix__(self,matrices):
@@ -38,18 +44,23 @@ class Data:
         
         return result
 
-    def __call__(self, paramdict):
-        """
-        return 
-        x = concatenated x data
-        y = concatenated y data
-        covar = big matrix with blocks of covariances
-        """
+    def __call__(self, paramdict=None):
+        if paramdict is None:
+            print('Nuisance parameters are set to default values')
+        elif type(paramdict) is dict:
+            for attr, value in paramdict.items():
+                if hasattr(self, attr):
+                    setattr(self, attr, value)
+                else:
+                    raise ValueError(f'{attr} is not a valid parameter')
+        else:
+            raise TypeError(f'{paramdict} is not a valid type')
+
         x = []
         y = []
         covar = []
         for d in self.data:
-            x1,y1,covar1 = self.get_data(d,paramdict)
+            x1,y1,covar1 = self.get_data(d)
             x.append(x1)
             y.append(y1)
             covar.append(covar1)
@@ -57,20 +68,19 @@ class Data:
         y = np.concatenate(y)
         covar = self.__block_matrix__(covar)
         return x,y,covar
+    
 
-    def get_data(self,choose,paramdict):
+    def get_data(self,choose):
         if choose == 'CC':
             return self.get_cosmic_clocks()
         elif choose == 'BAO':
             return self.get_bao()
         elif choose == 'GR':
-            assert 'file' in paramdict.keys(), 'file no must be in paramdict'
-            return self.get_growth(paramdict['file'])
+            return self.get_growth()
         elif choose == 'Lya':
             return self.get_Lya()
         elif choose == 'GRB':
-            assert 'Lambda' in paramdict.keys() and 'b' in paramdict.keys() and 'sigma_sys' in paramdict.keys(), 'Lambda, b and sigma_sys must be in paramdict'
-            return self.get_GRB(paramdict['Lambda'],paramdict['b'],paramdict['sigma_sys'])
+            return self.get_GRB()
         elif choose == 'SNE':
             return self.get_SNE()
         elif choose == 'QSA':
@@ -96,8 +106,8 @@ class Data:
         assert len(x) == len(y) == covar.shape[0] == covar.shape[1]
         return x,y,covar
     
-    def get_growth(self,file=0):
-        datafile = loadtxt(os.path.join(__datapath__, 'Growth Rate',f'GR{file}.txt' if file > 0 else 'GR.txt')) 
+    def get_growth(self):
+        datafile = loadtxt(os.path.join(__datapath__, 'Growth Rate',f'GR{self.file}.txt' if self.file > 0 else 'GR.txt')) 
         x = datafile[:,0]
         y = datafile[:,1]
         covar = np.diag(datafile[:,2]**2)
@@ -113,7 +123,7 @@ class Data:
         assert len(x) == len(y) == covar.shape[0] == covar.shape[1]
         return x,y,covar
     
-    def get_GRB(self,Lambda=1,b=1,sigma_sys=0.7571):
+    def get_GRB(self):
         datafile = loadtxt(os.path.join(__datapath__, 'GRB','GRB.txt'),usecols=(1,2,3,4,5))
         z = datafile[:,0]
         S_b = datafile[:,1]
@@ -122,14 +132,14 @@ class Data:
         sigma_E_p = datafile[:,4]
 
         mu1 = (1+z)/(4*np.pi)
-        mu2 = (E_p/300)**b
+        mu2 = (E_p/300)**self.b
         mu3 = (S_b**-1/100)
-        mu = (5/2)*(np.log10(mu1*mu2*mu3)+ Lambda)
+        mu = (5/2)*(np.log10(mu1*mu2*mu3)+ self.Lambda)
 
         sigma_mu1 = (5/(2*np.log(10)))**2
-        sigma_mu2 = (b*sigma_E_p/E_p)**2
+        sigma_mu2 = (self.b*sigma_E_p/E_p)**2
         sigma_mu3 = (sigma_S_b/S_b)**2
-        sigma_mu = sigma_mu1*(sigma_mu2+sigma_mu3+sigma_sys**2)
+        sigma_mu = sigma_mu1*(sigma_mu2+sigma_mu3+self.sigma_sys**2)
 
         covar = np.diag(sigma_mu)
 
