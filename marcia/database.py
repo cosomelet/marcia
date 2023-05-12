@@ -58,18 +58,28 @@ class Data:
         else:
             raise TypeError(f'{paramdict} is not a valid type')
 
-        x = []
-        y = []
-        covar = []
-        for d in self.data:
-            x1,y1,covar1 = self.get_data(d)
-            x.append(x1)
-            y.append(y1)
-            covar.append(covar1)
-        x = np.concatenate(x)
-        y = np.concatenate(y)
-        covar = self.__block_matrix__(covar)
-        return x,y,covar
+        # To create dictories for each data and the covariance matrix and finally the joint data
+        
+        covar_all = []
+
+        for i, d in enumerate(self.data):
+            self.x['x'+str(i)], self.y['y'+str(i)], self.covar['covar'+str(i)] = self.get_data(d)
+            covar_all.append(self.covar['covar'+str(i)])
+
+        x_all = np.concatenate(list(self.x.values()))
+        y_all = np.concatenate(list(self.y.values()))
+        covar_all = self.__block_matrix__(covar_all)
+        return x_all,y_all,covar_all
+
+        # for d in self.data:
+        #     x1,y1,covar1 = self.get_data(d)
+        #     x.append(x1)
+        #     y.append(y1)
+        #     covar.append(covar1)
+        # x = np.concatenate(x)
+        # y = np.concatenate(y)
+        # covar = self.__block_matrix__(covar)
+        # return x,y,covar
     
 
     def get_data(self,choose):
