@@ -1,8 +1,8 @@
-
 import os
 import sys
 import cmath
 import numpy as np
+import scipy as sp
 from scipy.integrate import quad
 import scipy.constants as const
 import time
@@ -70,14 +70,11 @@ class Kernels(object):
                     self.data_f['task_{0}'.format(i)] = self.data[i]
 
                 else:
+                    print(self.model[i], self.params[i])
                     print('Error: model or parameters not specified correctly')
                     sys.exit(0)
 
-        # Everytime this is initialised I set the sigma_f_check and l_check to avoid computing the
-        # covariance matrices for every single call with same hyperparameters
-        # self.sigma_f_check = -1.0
-        # self.l_check = -1.0
-        # self.labels = ["$\log_{10}(\sigma_f)$", "$\log_{10}(l)$"]
+        # self.CovMat = self.Cov_Mat()
 
         self.CovMat = self.Cov_Mat()
 
@@ -91,13 +88,6 @@ class Kernels(object):
 
     # This is to define the different possible kernel choices
 
-    def kernel(self, model, x1, x2):
-        if model == 'SE':
-            return self.s_f**2. * np.exp(- ((x1-x2)**2.)/(2. * self.l_s**2.))
-        elif model == 'M92':
-            return self.s_f**2. * np.exp(-np.sqrt(((x1-x2)**2.)/(2. * self.l_s**2.)))
-        elif model == 'M72':
-            return self.s_f**2. * np.exp(-np.sqrt(((x1-x2)**2.)/(2. * self.l_s**2.)))
 
     # To define the all the basis functions of all the possible kernels
     def basis_function(self, x1, x2):
