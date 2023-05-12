@@ -1,4 +1,3 @@
-import os
 import sys
 import cmath
 import numpy as np
@@ -49,7 +48,7 @@ class Kernels(object):
             sys.exit(0)
 
         # Reshaping the parameters to be a 2D array of shape (2, ntasks)
-        self.params = np.transpose(np.reshape(np.params, (self.ntasks, 2)))
+        self.params = np.transpose(np.reshape(self.params, (2, self.ntasks)))
 
         # To create a dictionary of paramters and datasets
         self.data_f = {}
@@ -76,61 +75,65 @@ class Kernels(object):
 
         # self.CovMat = self.Cov_Mat()
 
-        self.CovMat = self.Cov_Mat()
 
-    # To define the covariance matrix of the data
+    def matern(self, nu, x1, x2, l_s):
+        """ 
+            Defines the generalised matern kernel https://en.wikipedia.org/wiki/Mat%C3%A9rn_covariance_function
+            nu is a positive half-integer that determines the differentiability of the function and the smoothness of the resulting Gaussian process sample paths.
+            nu = 1/2, 3/2, 5/2, ... tend to be used most often in practice.
+            nu tends to infinity, the matern kernel tends to the squared exponential kernel
+            nu tends to 0, the matern kernel tends to the absolute exponential kernel
+            The input x1 and x2 are the x-axes of the data points and l_s is the scale length
+            """
+        
+        # This fucntion returns nan when x1 = x2, so we need to replace nan with zero 
+        return np.nan_to_num((2.**(1.-nu)/sp.special.gamma(nu)) * ((np.sqrt(2.*nu) * np.abs(x1-x2))/l_s)**nu * sp.special.kv(nu, (np.sqrt(2.*nu) * np.abs(x1-x2))/l_s)) + np.eye(len(x1)) # np.nan_to_num() to replace nan with zero    
+
+    
+    def kernel(self, model, params, x1, x2=None):
+        """ 
+            Defines the kernel function for the GP model and returns the covariance matrix 
+            """
+        if x2 is None:
+            x2 = x1
+        if model == 'SE': # Squared Exponential kernel
+            return params[0]**2. * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(2. * params[1]**2.))
+        if model == 'M92': # Matern 9/2 kernel
+            mat_nu = 9./2.
+            return params[0]**2. * self.matern(mat_nu, x1[:, None], x2[None, :], params[1])
+        if model == 'M72': # Matern 7/2 kernel
+            mat_nu = 7./2.
+            return params[0]**2. * self.matern(mat_nu, x1[:, None], x2[None, :], params[1]) 
+
+
+    def cross_kernel(self, model1, model2, params1, params2, x1, x2):
+        """ 
+            Defines the cross kernel function for the GP model and returns the covariance matrix 
+            """
+        if model1 == 'SE' and model2 == 'SE': # Squared Exponential kernel
+            # This fucntion boils down to the SE kernel function when the scale lengths are equal for both the datasets
+            return params1[0] * params2[0] * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
+        else:
+            print('Error: Cross kernel not defined')
+            sys.exit(0)
+
     def Cov_Mat(self):
-        #for key_1, data_1 in self.data_f.items():
-        #    for key_2, data_2 in self.data_f.items():
-        raise NotImplementedError
+        """ 
+            Defines the covariance matrix for the GP model and returns the covariance matrix 
+            """
+        # To create a dictionary of covariance matrices
+        self.CovMat = {}
+        for i in range(self.ntasks):
+            for j in range(self.ntasks):
+                if i == j:
+                    self.CovMat['task_{0}{1}'.format(i, j)] = self.kernel(self.kernel_f['task_{0}'.format(i)], self.params[i], self.data_f['task_{0}'.format(i)])
+                elif i < j:
+                    self.CovMat['task_{0}{1}'.format(i, j)] = np.transpose(self.cross_kernel(self.kernel_f['task_{0}'.format(i)], self.kernel_f['task_{0}'.format(j)], self.params[i], self.params[j], self.data_f['task_{0}'.format(i)], self.data_f['task_{0}'.format(j)]))
+                else:
+                    self.CovMat['task_{0}{1}'.format(i, j)] = np.transpose(self.CovMat['task_{0}{1}'.format(j, i)])
+        
+        # To join all the covariance matrices defined above in the dictionaries into one big covariance matrix taking into account the cross correlations between the datasets 
+        self.CovMat_all = np.block([[ self.CovMat['task_{0}{1}'.format(i, j)] for i in range(self.ntasks)] for j in range(self.ntasks)])  
 
-                
-
-    # This is to define the different possible kernel choices
-
-
-    # To define the all the basis functions of all the possible kernels
-    def basis_function(self, x1, x2):
-        if self.model == 'SE':
-            return self.s_f**2. * np.exp(- ((x1-x2)**2.)/(2. * self.l**2.))
-        elif self.model == 'M92':
-            return self.s_f**2. * np.exp(-np.sqrt(((x1-x2)**2.)/(2. * self.l**2.)))
-        elif self.model == 'M72':
-            return self.s_f**2. * np.exp(-np.sqrt(((x1-x2)**2.)/(2. * self.l**2.)))
-
-    # # Covarinace matrix of data
-    # def Inv_Cov_Mat(self):
-    #     z_CC = self.data_cc.z
-    #     Sigma_CC = np.diag(self.data_cc.dcc**2)
-    #     cmatrix = np.reshape([0.0]*(len(z_CC)*len(z_CC)),
-    #                          (len(z_CC), len(z_CC)))
-    #     for i in range(len(z_CC)):
-    #         for j in range(i+1):
-    #             # print self.kernel(z_CC[i],z_CC[j])
-    #             cmatrix[i, j] = self.kernel(z_CC[i], z_CC[j])
-    #     out = cmatrix.T + cmatrix
-    #     np.fill_diagonal(out, np.diag(cmatrix))
-    #     covmat = np.array(out) + np.array(Sigma_CC)
-    #     self.DetCovMat = np.linalg.det(covmat)
-    #     return np.linalg.inv(covmat)
-
-    # # Covariance matrix of prediction star
-    # def Cov_Mat_S(self, x1):
-    #     z_CC = self.data_cc.z
-    #     cmat_Star = [0.0]*(len(z_CC))
-    #     for i in range(len(z_CC)):
-    #         cmat_Star[i] = self.kernel(x1, z_CC[i])
-    #     return cmat_Star
-
-    # # Covariance matrix of prediction star
-    # def Cov_Mat_SS(self, x1):
-    #     zp = [x1]
-    #     # np.linspace(0.,2.5,50)
-    #     cmatrix = np.reshape([0.0]*(len(zp)*len(zp)), (len(zp), len(zp)))
-    #     for i in range(len(zp)):
-    #         for j in range(i+1):
-    #             cmatrix[i, j] = self.kernel(zp[i], zp[j])
-    #     cmat_Star_Star = cmatrix.T + cmatrix
-    #     np.fill_diagonal(cmat_Star_Star, np.diag(cmatrix))
-
-    #     return cmat_Star_Star
+        return self.CovMat_all
+    
