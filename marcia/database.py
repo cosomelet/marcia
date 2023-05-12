@@ -26,8 +26,10 @@ class Data:
         self.b = b
         self.sigma_sys = sigma_sys
 
-        
-       # self.x,self.y,self.covar = self.get_data()
+        self.x = {}
+        self.y = {}
+        self.covar = {}
+
     def __block_matrix__(self,matrices):
         size = sum(matrix.shape[0] for matrix in matrices)
         result = np.zeros((size, size))
