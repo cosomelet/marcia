@@ -64,11 +64,11 @@ class Kernels(object):
         else:
             for i in range(self.ntasks):
                 if self.model[i] in self.kernels and len(self.params[i]) == 2:
-                    self.kernel_f['task_{0}'.format(i)] = self.model[i]
-                    self.sig_f['task_{0}'.format(i)] = self.params[i, 0]
-                    self.l_s['task_{0}'.format(i)] = self.params[i, 1]
+                    self.kernel_f[f'task_{i}'] = self.model[i]
+                    self.sig_f[f'task_{i}'] = self.params[i, 0]
+                    self.l_s[f'task_{i}'] = self.params[i, 1]
                     # To create a dictionary of data
-                    self.data_f['task_{0}'.format(i)] = self.data[i]
+                    self.data_f[f'task_{i}'] = self.data[i]
 
                 else:
                     print(self.model[i], self.params[i])
@@ -136,7 +136,7 @@ class Kernels(object):
         
         # To join all the covariance matrices defined above in the dictionaries into one big covariance matrix taking into account the cross correlations between the datasets 
         self.CovMat_all = np.block([[ self.CovMat['task_{0}{1}'.format(i, j)] for i in range(self.ntasks)] for j in range(self.ntasks)])  
-
+        
         return self.CovMat_all
     
     def derivative_kernel(self, model1, model2, params1, params2, x1, x2=None):
