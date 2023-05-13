@@ -55,6 +55,8 @@ class Kernels(object):
         self.sig_f = {}
         self.l_s = {}
         self.kernel_f = {}
+        self.CovMat = {}
+        self.CovMat_all = []
 
         if len(self.data) != self.ntasks:
             print('Error: data length does not match the number of kernels')
@@ -136,4 +138,28 @@ class Kernels(object):
         self.CovMat_all = np.block([[ self.CovMat['task_{0}{1}'.format(i, j)] for i in range(self.ntasks)] for j in range(self.ntasks)])  
 
         return self.CovMat_all
+    
+    def derivative_kernel(self, model1, model2, params1, params2, x1, x2=None):
+        """ 
+            Defines the derivatives of cross kernel function for the GP model and returns a matrix 
+            """
+        dK = {}
+        if x2 is None:
+            x2 = x1
+        if model1 == 'SE' and model2 == 'SE':
+            # Derivative wrt x1
+            dK['dK_dx1'] = - params1[0] * params2[0] * (x1[:, None]-x2[None, :]) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
+            # Derivative wrt x2
+            dK['dK_dx2'] = params1[0] * params2[0] * (x1[:, None]-x2[None, :]) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
+            # Derivative wrt x1 and x2
+            dK['d2K_dx1dx2'] = params1[0] * params2[0] * (1. - ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
+            # Double derivative wrt x1
+            dK['d2K_dx1dx1'] = params1[0] * params2[0] * (params2[1]**2. - (x1[:, None]-x2[None, :])**2.) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
+            # Double derivative wrt x2
+            dK['d2K_dx2dx2'] = params1[0] * params2[0] * (params1[1]**2. - (x1[:, None]-x2[None, :])**2.) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
+            # Double derivative wrt x1 and x2
+            dK['d3K_dx1dx1dx2'] = - params1[0] * params2[0] * (x1[:, None]-x2[None, :]) * (params2[1]**2. - (x1[:, None]-x2[None, :])**2.) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
+            
+            return dK
+            
     
