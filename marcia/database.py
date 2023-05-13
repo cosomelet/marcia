@@ -10,7 +10,7 @@ __datapath__ = os.path.join(__path__,'../' 'Data')
 class Data:
 
     def __init__(self,data,file_fs8=0,Lambda=1,b=1,sigma_sys=0.7571,H0=70.0,):
-        datalist = ['CC','BAO_alam','BAO_zhaoß','GR','Lya','GRB','SNE','QSA']
+        datalist = ['CC','BAO_alam','BAO_zhao','GR','Lya','GRB','SNE','QSA']
         if type(data) is str:
             assert data in datalist, f'{data} is not in {datalist}'
             self.data = [data]
