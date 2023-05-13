@@ -63,8 +63,8 @@ class Data:
         covar_all = []
 
         for i, d in enumerate(self.data):
-            self.x['x'+str(i)], self.y['y'+str(i)], self.covar['covar'+str(i)] = self.get_data(d)
-            covar_all.append(self.covar['covar'+str(i)])
+            self.x[f'x{i}'], self.y[f'y{i}'], self.covar[f'covar{i}'] = self.get_data(d)
+            covar_all.append(self.covar[f'covar{i}'])
 
         x_all = np.concatenate(list(self.x.values()))
         y_all = np.concatenate(list(self.y.values()))
