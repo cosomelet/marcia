@@ -1,4 +1,4 @@
-z       DM(z)rdfid/rd   σDM(z)rdfid/rd   H(z)(rdfid/rd)^-1   σH(z)(rdfid/rd)^-1   DV(z)rdfid/rd   σDV(z)rdfid/rd   AP(z)   σAP(z)   fσ8(z)   σfσ8(z)
+#z       DM(z)rdfid/rd   σDM(z)rdfid/rd   H(z)(rdfid/rd)^-1   σH(z)(rdfid/rd)^-1   DV(z)rdfid/rd   σDV(z)rdfid/rd   AP(z)   σAP(z)   fσ8(z)   σfσ8(z)
 0.978   1586.18         284.93           113.72               14.63                 2933.59         327.71           1.2     0.31     0.379    0.176  
 1.23    1769.08         159.67           131.44               12.42                 3522.04         192.74           1.736   0.272    0.385    0.099  
 1.526   1768.77         96.59            148.11               12.75                 3954.31         141.71           2.212   0.265    0.342    0.07   

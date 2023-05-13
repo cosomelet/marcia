@@ -9,8 +9,8 @@ __datapath__ = os.path.join(__path__,'../' 'Data')
 
 class Data:
 
-    def __init__(self,data,file_fs8=0,Lambda=1,b=1,sigma_sys=0.7571, H0 = 70.0):
-        datalist = ['CC','BAO','GR','Lya','GRB','SNE','QSA']
+    def __init__(self,data,file_fs8=0,Lambda=1,b=1,sigma_sys=0.7571,H0=70.0,):
+        datalist = ['CC','BAO_alam','BAO_zhaoß','GR','Lya','GRB','SNE','QSA']
         if type(data) is str:
             assert data in datalist, f'{data} is not in {datalist}'
             self.data = [data]
@@ -74,8 +74,10 @@ class Data:
     def get_data(self,choose):
         if choose == 'CC':
             return self.get_cosmic_clocks()
-        elif choose == 'BAO':
-            return self.get_bao()
+        elif choose == 'BAO_alam':
+            return self.get_BAO_alam()
+        elif choose == 'BAO_zhao':
+            return self.get_BAO_zhao()
         elif choose == 'GR':
             return self.get_growth()
         elif choose == 'Lya':
@@ -97,10 +99,20 @@ class Data:
         covar = np.diag(sigma**2)
         assert len(x) == len(y) == covar.shape[0] == covar.shape[1]
         return x,y,covar
+
     
-    def get_bao(self, ):
+    def get_BAO_alam(self, ):
         datafile = loadtxt(os.path.join(__datapath__, 'Alam2016','DmH.txt'))
         datafile2 = loadtxt(os.path.join(__datapath__, 'Alam2016','CovDmh.txt'))
+        x = datafile[:,0]
+        y = datafile[:,1]
+        covar = datafile2
+        assert len(x) == len(y) == covar.shape[0] == covar.shape[1]
+        return x,y,covar
+    
+    def get_BAO_zhao(self,):
+        datafile = loadtxt(os.path.join(__datapath__, 'Zhao2018','All.txt'))
+        datafile2 = loadtxt(os.path.join(__datapath__, 'Zhao2018','Cov_All.txt'))
         x = datafile[:,0]
         y = datafile[:,1]
         covar = datafile2
