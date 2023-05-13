@@ -112,9 +112,18 @@ class Kernels(object):
         """ 
             Defines the cross kernel function for the GP model and returns the covariance matrix 
             """
+        # product of the sigmas
+        sig1sig2 = params1[0] * params2[0]
+        # product of the scale lengths
+        l1l2 = params1[1] * params2[1]
+        # quadrature of length scales
+        l1l2_quad = params1[1]**2. + params2[1]**2.
+        # difference between x1 and x2
+        x1x2 = x1[:, None]-x2[None, :]
+
         if model1 == 'SE' and model2 == 'SE': # Squared Exponential kernel
             # This fucntion boils down to the SE kernel function when the scale lengths are equal for both the datasets
-            return params1[0] * params2[0] * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
+            return sig1sig2 * np.exp(- (x1x2**2.)/(l1l2_quad)) * np.sqrt(2. * l1l2 / l1l2_quad)
         else:
             print('Error: Cross kernel not defined')
             sys.exit(0)
@@ -147,19 +156,37 @@ class Kernels(object):
         if x2 is None:
             x2 = x1
         if model1 == 'SE' and model2 == 'SE':
-            # Derivative wrt x1
-            dK['dK_dx1'] = - params1[0] * params2[0] * (x1[:, None]-x2[None, :]) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
-            # Derivative wrt x2
-            dK['dK_dx2'] = params1[0] * params2[0] * (x1[:, None]-x2[None, :]) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
-            # Derivative wrt x1 and x2
-            dK['d2K_dx1dx2'] = params1[0] * params2[0] * (1. - ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
-            # Double derivative wrt x1
-            dK['d2K_dx1dx1'] = params1[0] * params2[0] * (params2[1]**2. - (x1[:, None]-x2[None, :])**2.) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
-            # Double derivative wrt x2
-            dK['d2K_dx2dx2'] = params1[0] * params2[0] * (params1[1]**2. - (x1[:, None]-x2[None, :])**2.) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
-            # Double derivative wrt x1 and x2
-            dK['d3K_dx1dx1dx2'] = - params1[0] * params2[0] * (x1[:, None]-x2[None, :]) * (params2[1]**2. - (x1[:, None]-x2[None, :])**2.) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
+            # product of the sigmas
+            sig1sig2 = params1[0] * params2[0]
+            # product of the scale lengths
+            l1l2 = params1[1] * params2[1]
+            # quadrature of length scales
+            l1l2_quad = params1[1]**2. + params2[1]**2.
+            # difference between x1 and x2
+            x1x2 = x1[:, None]-x2[None, :]
+
+            # derivativve wrt x1 and derivative wrt x2
+            dK['dK_dx1'] = - 2 * sig1sig2 * x1x2 * np.exp(- (x1x2**2.)/(l1l2_quad)) * np.sqrt(2. * l1l2) / np.sqrt(l1l2_quad**3.) 
+            dK['dK_dx2'] = - dK['dK_dx1']
+            # derivative wrt x1 and x2
+            dK['d2K_dx1dx2'] = 2 * sig1sig2 * (1. - 2 * (x1x2**2.)/(l1l2_quad)) * np.exp(- (x1x2**2.)/(l1l2_quad)) * np.sqrt(2. * l1l2) / np.sqrt(l1l2_quad**3.)
+            # double derivative wrt x1
+            dK['d2K_dx1dx1'] = 2 * sig1sig2 * (2. * (x1x2**2.)/(l1l2_quad) - 1.) * np.exp(- (x1x2**2.)/(l1l2_quad)) * np.sqrt(2. * l1l2) / np.sqrt(l1l2_quad**3.)
+
+
             
+            # # Double derivative wrt x1 and x2
+            # dK['d2K_dx1dx2'] = params1[0] * params2[0] * (1. - ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
+            # # Double derivative wrt x1 and double derivative wrt x2
+            # dK['d2K_dx1dx1'] = params1[0] * params2[0] * (params2[1]**2. - (x1[:, None]-x2[None, :])**2.) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
+            # dK['d2K_dx2dx2'] = dK['d2K_dx1dx1']
+            # # Double derivative wrt x1 and derivative wrt x2
+            # dK['d3K_dx1dx1dx2'] = - params1[0] * params2[0] * (x1[:, None]-x2[None, :]) * (params2[1]**2. - (x1[:, None]-x2[None, :])**2.) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
+            # # Double derivative wrt x1 and x2
+            # dK['d3K_dx1dx2dx2'] = - params1[0] * params2[0] * (x1[:, None]-x2[None, :]) * (params1[1]**2. - (x1[:, None]-x2[None, :])**2.) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
+            # # Triple derivative wrt x1 and x2
+            # dK['d4K_dx1dx1dx2dx2'] = params1[0] * params2[0] * (params1[1]**2. - (x1[:, None]-x2[None, :])**2.) * (params2[1]**2. - (x1[:, None]-x2[None, :])**2.) * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(params1[1]**2. + params2[1]**2.)) * np.sqrt(2. * params1[1] * params2[1] / (params1[1]**2. + params2[1]**2.))
+
             return dK
             
     

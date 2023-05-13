@@ -9,7 +9,7 @@ __datapath__ = os.path.join(__path__,'../' 'Data')
 
 class Data:
 
-    def __init__(self,data,file=0,Lambda=1,b=1,sigma_sys=0.7571):
+    def __init__(self,data,file_fs8=0,Lambda=1,b=1,sigma_sys=0.7571, H0 = 70.0):
         datalist = ['CC','BAO','GR','Lya','GRB','SNE','QSA']
         if type(data) is str:
             assert data in datalist, f'{data} is not in {datalist}'
@@ -21,7 +21,7 @@ class Data:
         else:
             raise TypeError(f'{data} is not a valid type')
         
-        self.file = file
+        self.file_fs8 = file_fs8
         self.Lambda = Lambda
         self.b = b
         self.sigma_sys = sigma_sys
@@ -108,7 +108,7 @@ class Data:
         return x,y,covar
     
     def get_growth(self):
-        datafile = loadtxt(os.path.join(__datapath__, 'Growth Rate',f'GR{self.file}.txt' if self.file > 0 else 'GR.txt')) 
+        datafile = loadtxt(os.path.join(__datapath__, 'Growth Rate',f'GR{self.file_fs8}.txt' if self.file_fs8 > 0 else 'GR.txt')) 
         x = datafile[:,0]
         y = datafile[:,1]
         covar = np.diag(datafile[:,2]**2)
