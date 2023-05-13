@@ -123,8 +123,8 @@ class Kernels(object):
         """ 
             Defines the covariance matrix for the GP model and returns the covariance matrix 
             """
-        # To create a dictionary of covariance matrices
-        self.CovMat = {}
+        # To create a dictionary of covariance matrices for each task
+        
         for i in range(self.ntasks):
             for j in range(self.ntasks):
                 if i == j:
