@@ -7,10 +7,21 @@ import os
 __path__ = os.path.dirname(os.path.realpath(__file__))
 __datapath__ = os.path.join(__path__,'../' 'Data')
 
+def load_data_once(func):
+    data = None
+
+    def wrapper(*args, **kwargs):
+        nonlocal data
+        if data is None:
+            data = func(*args, **kwargs)
+        return data
+
+    return wrapper
+
 class Data:
 
-    def __init__(self,data,file_fs8=0,Lambda=1,b=1,sigma_sys=0.7571,H0=70.0,):
-        datalist = ['CC','BAO_alam','BAO_zhao','GR','Lya','GRB','SNE','QSA']
+    def __init__(self,data,file_fs8=0,Lambda=1,b=1,sigma_sys=0.7571,H0=1,):
+        datalist = ['CC','BAO-alam','BAO-zhao','GR','Lya','GRB','SNE','QSA']
         if type(data) is str:
             assert data in datalist, f'{data} is not in {datalist}'
             self.data = [data]
@@ -25,6 +36,7 @@ class Data:
         self.Lambda = Lambda
         self.b = b
         self.sigma_sys = sigma_sys
+        self.H0 = H0
 
         self.x = {}
         self.y = {}
@@ -74,9 +86,9 @@ class Data:
     def get_data(self,choose):
         if choose == 'CC':
             return self.get_cosmic_clocks()
-        elif choose == 'BAO_alam':
+        elif choose == 'BAO-alam':
             return self.get_BAO_alam()
-        elif choose == 'BAO_zhao':
+        elif choose == 'BAO-zhao':
             return self.get_BAO_zhao()
         elif choose == 'GR':
             return self.get_growth()
@@ -91,10 +103,11 @@ class Data:
         else:
             raise ValueError(f'{choose} is not a valid data set')
     
+    @load_data_once
     def get_cosmic_clocks(self):
         datafile = loadtxt(os.path.join(__datapath__, 'Cosmic_Clocks','CC.txt'))
         x = datafile[:,0]
-        y = datafile[:,1]
+        y = datafile[:,1]/self.H0
         sigma = datafile[:,2]
         covar = np.diag(sigma**2)
         assert len(x) == len(y) == covar.shape[0] == covar.shape[1]

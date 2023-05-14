@@ -1,19 +1,17 @@
 import numpy as np
-from marcia import Data as db
+from marcia import Data 
 from marcia import Cosmology as cosmo 
-
 
 
 class Likelihood(object):
     # This contains the likelihoods for all the datasets implemented in the code as yet
-    def __init__(self, data, model, priors):
-        self.model = model
-        self.priors = np.array(priors)
-        self.data = data
+    def __init__(self, model,parameters,data,prior_file=None):
+
         self.clight = 299792458. / 1000.
-        # theo = theory.Cosmo(model, cParIni) # This needs to be done here to make the code more autonomous
+        self.theory = cosmo(model,parameters,prior_file) # This needs to be done here to make the code more autonomous
         # This list sets the available data to work with, has to be updated when ever a new dataset is added
-        self.datalist = ['CC','BAO-DR12','BAO-DR14','Ly-alpha','SN','SNE','R18']
+        self.prior = self.theory.priors
+        self.data = data
         # The nuisance parameters for each of the datasets, if any have to be added here to the theta
         
 
@@ -22,8 +20,9 @@ class Likelihood(object):
 
             
     def chisq_CC(self,theta):
-        data = db('CC')
-        theory = cosmo(self.model,theta)
+        data = Data(data)
+        hubble_theory = self.theory.hubble_rate(theta)
+        redshift, hubble_rate, covariance = data.get_cosmic_clocks()
         return  np.dot( data.cc , np.dot( theory.CovMat , data.cc.T) ) + np.log( theory.DetCovMat ) +  np.log(2. *np.pi )*len(data.z)
 
 
