@@ -2,6 +2,7 @@ import numpy as np
 import scipy.integrate as it
 from scipy.integrate import quad
 from marcia.params import Params
+from scipy.interpolate import interp1d
 
 
 def Cosmology(model,parameters,prior_file=None):
@@ -44,7 +45,7 @@ class Cosmology_base(object):
 
     
         if self.rdsample and self.Obsample:
-            raise ValueError('Mb and Ob cannot be sampled together')
+            raise ValueError('rd and Ob cannot be sampled together')
         
 
         self.clight = 299792458. / 1000.
@@ -61,9 +62,21 @@ class Cosmology_base(object):
         """Part of sub class"""
         pass
 
-    def transverse_distance(self,parameters,z):
+    def _transverse_distance_(self,parameters,z):
         """Part of sub class"""
         pass
+
+    def transverse_distance(self,parameters,z):
+        """
+        interpolate _transverse_distance_
+        """
+        z_inp = np.linspace(0.,3,1000)
+        d = self._transverse_distance_(parameters,z_inp)
+        f = interp1d(z_inp,d)
+        return f(z)
+
+
+
     
     def hubble_rate(self,parameters, z):
         # Use this print, in case needed for Error_handling.
@@ -173,7 +186,7 @@ class wCDM(Cosmology_base):
         a = self.a(z)
         return p.w0 + p.wa*(1-a)
     
-    def transverse_distance(self,parameters, z):
+    def _transverse_distance_(self,parameters, z):
         # Use this print, in case needed for Error_handling.
         # print ''
         def Ly(y,t):
@@ -191,7 +204,12 @@ class LCDM(wCDM):
     def __check_mandatory_parameters__(self):
         assert 'H0' in self.param.parameters, 'LCDM: H0 is not defined in the parameters'
         assert 'Omega_m' in self.param.parameters, 'LCDM: Omega_m is not defined in the parameters'
-        assert len(self.param.parameters) == 2, 'LCDM: parameters are not correct'
+        n=2
+        if self.rdsample or self.Obsample:
+            n+=1
+        if self.Mbsample:
+            n+=1
+        assert len(self.param.parameters) == n, 'LCDM: parameters are not correct'
 
 class CPL(wCDM):
     def __init__(self, parameters,prior_file=None):

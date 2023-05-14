@@ -10,32 +10,45 @@ class Likelihood(object):
         self.clight = 299792458. / 1000.
         self.theory = cosmo(model,parameters,prior_file) # This needs to be done here to make the code more autonomous
         # This list sets the available data to work with, has to be updated when ever a new dataset is added
-        self.prior = self.theory.priors
+        self.priors = self.theory.priors
         self.data = data
+        self.db = Data(data)
         # The nuisance parameters for each of the datasets, if any have to be added here to the theta
         
 
-    def __getattribute__(self, item):
-        return super(Likelihood, self).__getattribute__(item)
+    #def __getattribute__(self, item):
+    #    return super(Likelihood, self).__getattribute__(item)
 
             
     def chisq_CC(self,theta):
-        data = Data(data)
-        hubble_theory = self.theory.hubble_rate(theta)
-        redshift, hubble_rate, covariance = data.get_cosmic_clocks()
-        return  np.dot( data.cc , np.dot( theory.CovMat , data.cc.T) ) + np.log( theory.DetCovMat ) +  np.log(2. *np.pi )*len(data.z)
+        redshift, hubble_rate, covariance = self.db.get_cosmic_clocks()
+        hubble_theory = self.theory.hubble_rate(theta, redshift)
+        return  np.dot(hubble_rate - hubble_theory, np.dot(np.linalg.inv(covariance), hubble_rate - hubble_theory))
+    
+    def chisq_BAO_alam(self,theta):
+        redshift, distance, covariance = self.db.get_BAO_alam()
+        rd = self.theory.sound_horizon(theta)
+        dist = distance.copy()
+        distance_theory = self.theory.transverse_distance(theta, redshift)
+        dist*=rd
+        cov = covariance.copy()
+        cov*=rd**2
+
+        return  np.dot(dist- distance_theory, np.dot(np.linalg.inv(cov), dist - distance_theory))
 
 
     def chisq(self,theta):
         chi2 = 0
         for i in self.data:
+            i = i.replace('-','_')
             chi2 += self.__getattribute__(f'chisq_{i}')(theta)
         return chi2
     
     def logPrior(self, theta):
         # if self.priors[0][0] < theta[0] < self.priors[0][1] and self.priors[1][0] < theta[1] < self.priors[1][1]:
         # logPrior is independent of data for the most of it, unless otherwise some strange functions are defined
-        if all((np.array(theta)-self.priors[:, 0])>0) and all((self.priors[:, 1]-np.array(theta))>0):
+        #if all((np.array(theta)-self.priors[:, 0])>0) and all((self.priors[:, 1]-np.array(theta))>0):
+        if all(self.priors[i][0] < theta[i] < self.priors[i][1] for i in range(len(theta))):
             return 0.0
         return -np.inf
 

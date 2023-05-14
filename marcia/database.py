@@ -104,8 +104,11 @@ class Data:
             raise ValueError(f'{choose} is not a valid data set')
     
     @load_data_once
+    def get_data_cosmic_clocks(self):
+        return loadtxt(os.path.join(__datapath__, 'Cosmic_Clocks','CC.txt'))
+    
     def get_cosmic_clocks(self):
-        datafile = loadtxt(os.path.join(__datapath__, 'Cosmic_Clocks','CC.txt'))
+        datafile = self.get_data_cosmic_clocks()
         x = datafile[:,0]
         y = datafile[:,1]/self.H0
         sigma = datafile[:,2]
@@ -113,16 +116,18 @@ class Data:
         assert len(x) == len(y) == covar.shape[0] == covar.shape[1]
         return x,y,covar
 
-    
+    @load_data_once
     def get_BAO_alam(self, ):
         datafile = loadtxt(os.path.join(__datapath__, 'Alam2016','DmH.txt'))
         datafile2 = loadtxt(os.path.join(__datapath__, 'Alam2016','CovDmh.txt'))
-        x = datafile[:,0]
-        y = datafile[:,1]
-        covar = datafile2
+        #indices = datafile[:, 0].argsort()
+        x = datafile[:,0]#[indices]
+        y = datafile[:,1]#[indices]
+        covar = datafile2#[:, indices][indices, :]
         assert len(x) == len(y) == covar.shape[0] == covar.shape[1]
         return x,y,covar
     
+    @load_data_once
     def get_BAO_zhao(self,):
         datafile = loadtxt(os.path.join(__datapath__, 'Zhao2018','All.txt'))
         datafile2 = loadtxt(os.path.join(__datapath__, 'Zhao2018','Cov_All.txt'))
