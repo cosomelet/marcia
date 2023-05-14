@@ -116,11 +116,11 @@ class Cosmology_base(object):
         p = self.param(parameters)
         if self.Mbsample:
             Mb = p.M_b
-            mu = Mb + 25. + 5.*np.log10( (1+ z2)* self.transverse_distance(z1) )
+            mu = Mb + 25. + 5.*np.log10( (1+ z2)* self.transverse_distance(parameters, z1) )
         else:
             # This is useful if only SN data is needed to be used
             Mb = -19.05
-            mu = Mb + 25. + 5.*np.log10( (1+ z2)* self.transverse_distance(z1) )
+            mu = Mb + 25. + 5.*np.log10( (1+ z2)* self.transverse_distance(parameters, z1) )
         return mu
     
     # This is to provide the Mb alone
@@ -152,7 +152,7 @@ class Cosmology_base(object):
         p = self.param(parameters)
         omega_b = p.Omega_b*(p.H0/100.)**2.
         Rs = 31500./(2.7255/2.7)**4. #3./4./2.47282 *1e+05   # just photons are coupled to baryons
-        return self.clight/p.H0 * quad(func=lambda x: np.exp(-x)/(self.expansion_rate(np.exp(-x)-1.)*np.sqrt(3.*(1. + Rs * omega_b * np.exp(x) )) ), a = np.log(1e-40) , b = np.log(1./(1.+z)) , limit=100 )[0]
+        return self.clight/p.H0 * quad(func=lambda x: np.exp(-x)/(self.hubble_rate(parameters, np.exp(-x)-1.)/p.H0 * np.sqrt(3.*(1. + Rs * omega_b * np.exp(x) )) ), a = np.log(1e-40) , b = np.log(1./(1.+z)) , limit=100 )[0]
 
 
     def rs2(self,parameters,z):
@@ -162,7 +162,7 @@ class Cosmology_base(object):
         p = self.param(parameters)
         omega_b = p.Omega_b*(p.H0/100.)**2.
         Rs = 31500./(2.7255/2.7)**4. #3./4./2.47282 *1e+05   # just photons are coupled to baryons
-        return self.clight/p.H0 * quad(func=lambda x: 1./(x**2. * self.expansion_rate(1./x - 1.)*np.sqrt(3.*(1. + Rs * omega_b * x )) ), a = 0 , b = 1./(1. + z))[0]
+        return self.clight/p.H0 * quad(func=lambda x: 1./(x**2. * self.hubble_rate(parameters, 1./x - 1.)/p.H0 * np.sqrt(3.*(1. + Rs * omega_b * x )) ), a = 0 , b = 1./(1. + z))[0]
     
 
 class wCDM(Cosmology_base):
@@ -301,7 +301,7 @@ class kwCDM(wCDM):
         elif p.Omega_k < 0.0:
             return np.nan_to_num( self.clight/(np.sqrt(abs(p.Omega_k))*p.H0)*np.sin((np.sqrt(abs(p.Omega_k)))* p.H0* tint))
             
-        elif self.Omega_k == 0.0:
+        elif p.Omega_k == 0.0:
             return np.nan_to_num( self.clight* tint)
     
 
@@ -327,7 +327,6 @@ class kCPL(kwCDM):
         assert 'wa' in self.param.parameters, 'kCPL: wa is not defined in the parameters'
         assert len(self.param.parameters) == 5, 'kCPL: parameters are not correct'
     
-        
 class kCPL3(CPL3):
     def __init__(self, parameters,prior_file=None):
         super().__init__(parameters,prior_file)
@@ -355,7 +354,7 @@ class kCPL3(CPL3):
         elif p.Omega_k < 0.0:
             return np.nan_to_num( self.clight/(np.sqrt(abs(p.Omega_k))*p.H0)*np.sin((np.sqrt(abs(p.Omega_k)))* p.H0* tint))
             
-        elif self.Omega_k == 0.0:
+        elif p.Omega_k == 0.0:
             return np.nan_to_num( self.clight* tint)
 
     
@@ -386,6 +385,6 @@ class kXCDM(XCDM):
         elif p.Omega_k < 0.0:
             return np.nan_to_num( self.clight/(np.sqrt(abs(p.Omega_k))*p.H0)*np.sin((np.sqrt(abs(p.Omega_k)))* p.H0* tint))
             
-        elif self.Omega_k == 0.0:
+        elif p.Omega_k == 0.0:
             return np.nan_to_num( self.clight* tint)
         
