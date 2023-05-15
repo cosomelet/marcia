@@ -3,6 +3,7 @@ import scipy.integrate as it
 from scipy.integrate import quad
 from marcia.params import Params
 from scipy.interpolate import interp1d
+from marcia.backend import cosmology  as cbackend
 
 
 
@@ -67,50 +68,24 @@ class Cosmology_base(object):
         """Part of sub class"""
         pass
     
-    
     def transverse_distance(self,parameters,z):
-        """
-        interpolate _transverse_distance_
-        """
-        z_inp = np.arange(0.,max(z)+.5,0.01)
+        z_inp = cbackend.z_inp(z)
         d = self._transverse_distance_(parameters,z_inp)
-        f = interp1d(z_inp,d)
-        return f(z)
-
-
+        return cbackend.interpolate(z_inp,z,d)
 
     def hubble_rate(self,parameters, z):
-        # Use this print, in case needed for Error_handling.
-        # print ''
         p = self.param(parameters)
-        zeq = 2.5 * 10.**4. * (p.Omega_m + p.Omega_b) * (p.H0/100.)**2. /(2.7255/2.7)**4.
-        Omega_r = 4.18343*10**-5./(p.H0/100.)**2.
-        E2 = Omega_r*pow((1. + z),4.) + p.Omega_m*pow((1. + z),3.) + p.Omega_b*pow((1. + z),3.) + p.Omega_k*pow((1. + z),2.) + (1. - p.Omega_m - p.Omega_k - p.Omega_b - Omega_r)*self.dark_energy_f(parameters,z)
-        Hofz = p.H0*np.sqrt( E2 )
-        return np.nan_to_num(Hofz)
+        de = self.dark_energy_f(parameters,z)
+        return cbackend.hubble_rate(p.H0,p.Omega_m,p.Omega_b,p.Omega_k,de, z)
 
-       
+    #To define the value of r_d using the Aubourg15 formula
 
-    #To define the value of r_d using the Aubourg15 formulae
     def sound_horizon(self,parameters):
         p = self.param(parameters)
         if self.rdsample:
-            rd = p.r_d
+            return p.r_d
         else:
-            m_nu = 0.06 # In the units of eV
-            omega_nu = 0.0107 *(m_nu/1.0) #This is in the units of eV. This should be equal to 6.42*10^(-4)
-            if self.Obsample:
-                omega_b = p.Omega_b*(p.H0/100.)**2. #0.0217
-            else:
-                omega_b = 0.0217
-            
-            omega_cb = (p.Omega_m+p.Omega_b)*(p.H0/100.)**2 - omega_nu
-            if omega_cb < 0:
-                rd = -1.0
-            else:
-                rd = np.nan_to_num(55.154 * np.exp(-72.3* pow(omega_nu + 0.0006,2))/(pow(omega_cb, 0.25351)*pow(omega_b, 0.12807)))
-
-        return rd
+            return cbackend.sound_horizon(p.H0,p.Omega_m,p.Omega_b,self.Obsample)
 
     # This is to model the mu, but however the Mb is set inside, therefore it is M_b + mu but not mu alone
     def distance_modulus(self,parameters,z1, z2):
@@ -176,11 +151,10 @@ class wCDM(Cosmology_base):
         assert 'w0' in self.param.parameters, 'wCDM: w0 is not defined in the parameters'
         assert 'Omega_m' in self.param.parameters, 'wCDM: Omega_m is not defined in the parameters'
         assert len(self.param.parameters) == 3, 'wCDM: parameters are not correct'
-        
     
     def dark_energy_f(self, parameters, z):
         p = self.param(parameters)
-        return np.exp(3.*(-p.wa + p.wa/(1. + z) + (1. + p.w0 + p.wa)*np.log(1. + z)))
+        return cbackend.dark_energy_f_wCDM(p.w0, p.wa, z)
     
     def dark_energy_w(self,parameters, z):
         p = self.param(parameters)
