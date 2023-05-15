@@ -11,7 +11,7 @@ class Sampler:
 
         self.ndim = len(self.likelihood.priors)
         self.nwalkers = 100
-        self.nsteps = 20
+        self.nsteps = 2000
         self.pburnin = 20. # percentage of burn-in steps to remove from each walker
         self.nburnin =self.nsteps*(self.pburnin)/100
         self.initial_guess = initial_guess
