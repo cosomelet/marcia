@@ -2,21 +2,13 @@ from typing import Any
 from numpy import loadtxt
 import numpy as np
 import os
+from marcia import load_data_once
 
 
 __path__ = os.path.dirname(os.path.realpath(__file__))
 __datapath__ = os.path.join(__path__,'../' 'Data')
 
-def load_data_once(func):
-    data = None
 
-    def wrapper(*args, **kwargs):
-        nonlocal data
-        if data is None:
-            data = func(*args, **kwargs)
-        return data
-
-    return wrapper
 
 class Data:
 
