@@ -70,7 +70,7 @@ class Cosmology_base(object):
         """
         interpolate _transverse_distance_
         """
-        z_inp = np.linspace(0.,3,1000)
+        z_inp = np.arange(0.,max(z)+.5,0.01)
         d = self._transverse_distance_(parameters,z_inp)
         f = interp1d(z_inp,d)
         return f(z)

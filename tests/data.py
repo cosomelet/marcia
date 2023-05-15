@@ -9,8 +9,8 @@ import unittest
 class TestDATA(unittest.TestCase):
     def setUp(self):
         self.data_cc = Data('CC')
-        self.data_bao = Data('BAO')
-        self.data_cc_bao = Data(['CC','BAO'])
+        self.data_bao = Data('BAO-alam')
+        self.data_cc_bao = Data(['CC','BAO-alam'])
 
     def test_covariance(self):
         _,_,cov_cc = self.data_cc({})
