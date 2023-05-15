@@ -5,6 +5,7 @@ from marcia.params import Params
 from scipy.interpolate import interp1d
 
 
+
 def Cosmology(model,parameters,prior_file=None):
     models = ['LCDM','wCDM','CPL','CPL3','kwCPL','kCPL3','kLCDM','XCDM','kXCDM']
     if model not in models:
@@ -65,7 +66,8 @@ class Cosmology_base(object):
     def _transverse_distance_(self,parameters,z):
         """Part of sub class"""
         pass
-
+    
+    
     def transverse_distance(self,parameters,z):
         """
         interpolate _transverse_distance_
@@ -77,7 +79,6 @@ class Cosmology_base(object):
 
 
 
-    
     def hubble_rate(self,parameters, z):
         # Use this print, in case needed for Error_handling.
         # print ''
