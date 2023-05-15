@@ -150,7 +150,12 @@ class wCDM(Cosmology_base):
         assert 'H0' in self.param.parameters, 'wCDM: H0 is not defined in the parameters'
         assert 'w0' in self.param.parameters, 'wCDM: w0 is not defined in the parameters'
         assert 'Omega_m' in self.param.parameters, 'wCDM: Omega_m is not defined in the parameters'
-        assert len(self.param.parameters) == 3, 'wCDM: parameters are not correct'
+        n=3
+        if self.rdsample or self.Obsample:
+            n+=1
+        if self.Mbsample:
+            n+=1
+        assert len(self.param.parameters) == n, 'wCDM: parameters are not correct'
     
     def dark_energy_f(self, parameters, z):
         p = self.param(parameters)
@@ -195,7 +200,12 @@ class CPL(wCDM):
         assert 'Omega_m' in self.param.parameters, 'CPL: Omega_m is not defined in the parameters'
         assert 'wa' in self.param.parameters, 'CPL: wa is not defined in the parameters'
         assert 'w0' in self.param.parameters, 'CPL: w0 is not defined in the parameters'
-        assert len(self.param.parameters) == 4, 'CPL: parameters are not correct'
+        n=4
+        if self.rdsample or self.Obsample:
+            n+=1
+        if self.Mbsample:
+            n+=1
+        assert len(self.param.parameters) == n, 'CPL: parameters are not correct'
 
 class CPL3(wCDM):
     def __init__(self, parameters,prior_file=None):
@@ -208,7 +218,12 @@ class CPL3(wCDM):
         assert 'w0' in self.param.parameters, 'CPL3: w0 is not defined in the parameters'
         assert 'wb' in self.param.parameters, 'CPL3: wb is not defined in the parameters'
         assert 'wc' in self.param.parameters, 'CPL3: wc is not defined in the parameters'
-        assert len(self.param.parameters) == 6, 'CPL3: parameters are not correct'
+        n=6
+        if self.rdsample or self.Obsample:
+            n+=1
+        if self.Mbsample:
+            n+=1
+        assert len(self.param.parameters) == n, 'CPL3: parameters are not correct'
 
     def dark_energy_f(self,parameters, z):
         p = self.param(parameters)
@@ -238,7 +253,12 @@ class XCDM(wCDM):
         assert 'fa' in self.param.parameters, 'XCDM: fa is not defined in the parameters'
         assert 'fb' in self.param.parameters, 'XCDM: fb is not defined in the parameters'
         assert 'fc' in self.param.parameters, 'XCDM: fc is not defined in the parameters'
-        assert len(self.param.parameters) == 5, 'XCDM: parameters are not correct'
+        n=5
+        if self.rdsample or self.Obsample:
+            n+=1
+        if self.Mbsample:
+            n+=1
+        assert len(self.param.parameters) == n, 'XCDM: parameters are not correct'
     
     def dark_energy_f(self,parameters,z):
         p = self.param(parameters)
@@ -260,7 +280,12 @@ class kwCDM(wCDM):
         assert 'Omega_m' in self.param.parameters, 'kwCDM: Omega_m is not defined in the parameters'
         assert 'Omega_k' in self.param.parameters, 'kwCDM: Omega_k is not defined in the parameters'
         assert 'w0' in self.param.parameters, 'kwCDM: w0 is not defined in the parameters'
-        assert len(self.param.parameters) == 4, 'kwCDM: parameters are not correct'
+        n=4
+        if self.rdsample or self.Obsample:
+            n+=1
+        if self.Mbsample:
+            n+=1
+        assert len(self.param.parameters) == n, 'kwCDM: parameters are not correct'
 
     
     def transverse_distance(self, parameters, z):
@@ -288,7 +313,12 @@ class kLCDM(kwCDM):
         assert 'H0' in self.param.parameters, 'kLCDM: H0 is not defined in the parameters'
         assert 'Omega_m' in self.param.parameters, 'kLCDM: Omega_m is not defined in the parameters'
         assert 'Omega_k' in self.param.parameters, 'kLCDM: Omega_k is not defined in the parameters'
-        assert len(self.param.parameters) == 3, 'kLCDM: parameters are not correct'
+        n=3
+        if self.rdsample or self.Obsample:
+            n+=1
+        if self.Mbsample:
+            n+=1
+        assert len(self.param.parameters) == n, 'kLCDM: parameters are not correct'
 
 class kCPL(kwCDM):
     def __init__(self, parameters,prior_file=None):
@@ -300,7 +330,12 @@ class kCPL(kwCDM):
         assert 'Omega_k' in self.param.parameters, 'kCPL: Omega_k is not defined in the parameters'
         assert 'w0' in self.param.parameters, 'kCPL: w0 is not defined in the parameters'
         assert 'wa' in self.param.parameters, 'kCPL: wa is not defined in the parameters'
-        assert len(self.param.parameters) == 5, 'kCPL: parameters are not correct'
+        n=5
+        if self.rdsample or self.Obsample:
+            n+=1
+        if self.Mbsample:
+            n+=1
+        assert len(self.param.parameters) == n, 'kCPL: parameters are not correct'
     
 class kCPL3(CPL3):
     def __init__(self, parameters,prior_file=None):
@@ -314,7 +349,12 @@ class kCPL3(CPL3):
         assert 'wa' in self.param.parameters, 'kCPL3: wa is not defined in the parameters'
         assert 'wc' in self.param.parameters, 'kCPL3: wc is not defined in the parameters'
         assert 'wb' in self.param.parameters, 'kCPL3: wb is not defined in the parameters'
-        assert len(self.param.parameters) == 7, 'kCPL3: parameters are not correct'
+        n=7
+        if self.rdsample or self.Obsample:
+            n+=1
+        if self.Mbsample:
+            n+=1
+        assert len(self.param.parameters) == n, 'kCPL3: parameters are not correct'
     
     def transverse_distance(self, parameters, z):
         p = self.param(parameters)
@@ -344,7 +384,12 @@ class kXCDM(XCDM):
         assert 'fa' in self.param.parameters, 'kXCDM: fa is not defined in the parameters'
         assert 'fb' in self.param.parameters, 'kXCDM: fb is not defined in the parameters'
         assert 'fc' in self.param.parameters, 'kXCDM: fc is not defined in the parameters'
-        assert len(self.param.parameters) == 6, 'kXCDM: parameters are not correct'
+        n=6
+        if self.rdsample or self.Obsample:
+            n+=1
+        if self.Mbsample:
+            n+=1
+        assert len(self.param.parameters) == n, 'kXCDM: parameters are not correct'
     
     def transverse_distance(self, parameters, z):
         """transverse distance in Mpc/h"""
