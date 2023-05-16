@@ -4,3 +4,4 @@ toml
 emcee
 chainconsumer
 numba
+getdist
