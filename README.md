@@ -11,8 +11,12 @@ Multi-task gAussian pRocess for CosmologIcal Applications
 Clone the latest version of the code from github
 
 ```
+cd marcia
 pip install .
 ```
+
+### Contributing 
+[![Slack](https://img.shields.io/badge/Slack-4A154B?style=for-the-badge&logo=slack&logoColor=white)]()
 
 ### Documentation 
 
