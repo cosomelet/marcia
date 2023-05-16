@@ -1,12 +1,14 @@
 import emcee
 import numpy as np
 from marcia import Likelihood as lk
+from marcia import temporarily_false
+from getdist import plots, MCSamples
 import scipy.optimize as op
 from chainconsumer import ChainConsumer
 import logging
 import os
 
-logging.basicConfig(filename="convergence.log",format='%(asctime)s %(message)s',filemode='w')
+logging.basicConfig(filename="sampler.log",format='%(asctime)s %(message)s',filemode='w')
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -14,12 +16,15 @@ logger.setLevel(logging.INFO)
 
 class Sampler:
 
-    def __init__(self,model,parameters,data,initial_guess,prior_file=None):
+    def __init__(self,model,parameters,data,initial_guess,prior_file=None,max_n=100000,sampler_file='sampler.h5',resume=False):
         self.likelihood = lk(model,parameters,data,prior_file)
 
         self.ndim = len(self.likelihood.priors)
         self.nwalkers = 100
         self.initial_guess = initial_guess
+        self.max_n = max_n
+        self.sampler_file = sampler_file
+        self.resume = resume
 
     
     def MLE(self,verbose=True):
@@ -36,63 +41,74 @@ class Sampler:
         pos = [mle+ 1e-4*np.random.randn(self.ndim) for i in range(self.nwalkers)]
         return pos
     
-    def sampler(self,filename):
-        backend = emcee.backends.HDFBackend(filename)
-        if os.path.isfile(filename):
+    def sampler(self):
+        backend = emcee.backends.HDFBackend(self.sampler_file)
+        if os.path.isfile(self.sampler_file) and (not self.resume):
             return backend
         else:
-
-            backend.reset(self.nwalkers, self.ndim)
-
-            sampler = emcee.EnsembleSampler(self.nwalkers, self.ndim, self.likelihood.logProb, backend=backend)  
-
-            max_n = 100000
+            if self.resume:
+                logger.info('Resuming from previous run')
+            else:
+                backend.reset(self.nwalkers, self.ndim)
+            sampler = emcee.EnsembleSampler(self.nwalkers, self.ndim, self.likelihood.logProb, backend=backend)
             index = 0
-            autocorr = np.empty(max_n)
-
+            autocorr = np.empty(self.max_n)
             old_tau = np.inf
+            for sample in sampler.sample(self.sampler_pos(), iterations=self.max_n, progress=True):
 
-            for sample in sampler.sample(self.sampler_pos(), iterations=max_n, progress=True):
-                # Only check convergence every 100 steps
                 if sampler.iteration % 100:
                     continue
-
-                # Compute the autocorrelation time so far
-                # Using tol=0 means that we'll always get an estimate even
-                # if it isn't trustworthy
                 tau = sampler.get_autocorr_time(tol=0)
                 autocorr[index] = np.mean(tau)
                 index += 1
-
-                # Check convergence
                 converged = np.all(tau * 100 < sampler.iteration)
                 converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
-                logger.info(f'I: {sampler.iteration}, tau*100:{tau * 100}, Tol:{(old_tau - tau) / tau}')
+                logger.info(f'I:{sampler.iteration}, A:{(tau*100)-sampler.iteration}, T:{np.abs(old_tau - tau) / tau}')
                 if converged:
                     print(f'Converged at iteration {sampler.iteration}')
+                    logger.info(f'Converged at iteration {sampler.iteration}')
                     break
                 old_tau = tau
             
             return sampler
 
-# Initialize the sampler
+    @temporarily_false('resume')
+    def get_burnin(self):
+        tau = self.sampler().get_autocorr_time()
+        burnin = int(2 * np.max(tau))
+        thin = int(0.5 * np.min(tau))
+        return burnin, thin
 
-
-        # sampler = emcee.EnsembleSampler(self.nwalkers, self.ndim, self.likelihood.logProb)
-        # sampler.run_mcmc(pos, self.nsteps,progress=True)
-        # return sampler
-    
-    def get_chain(self,filename):
-        sampler = self.sampler(filename)
-        samples = sampler.get_chain(discard=100, thin=15, flat=True)
+    @temporarily_false('resume')
+    def get_chain(self,getdist=False):
+        sampler = self.sampler()
+        burnin, thin = self.get_burnin()
+        samples = sampler.get_chain(discard=burnin, thin=thin, flat=True)
+        if getdist:
+            lnprob = sampler.get_log_prob(discard=burnin, thin=thin, flat=True)
+            lnprior = sampler.get_blobs(discard=burnin, thin=thin, flat=True)
+            if lnprior is None:
+                lnprior = np.zeros_like(lnprob)
+            samples = np.concatenate((lnprob[:,None],lnprior[:,None],samples),axis=1)
         return samples
+    
+    @temporarily_false('resume')
+    def corner_plot(self,getdist=False):
+        chains = self.get_chain()
+        names = self.likelihood.theory.param.parameters
+        labels = [p.replace('$','') for p in self.likelihood.theory.labels]
+        if getdist:
+            samples = MCSamples(samples=chains,names=names,labels=labels)
+            g = plots.get_subplot_plotter()
+            g.triangle_plot([samples], filled=True)
 
-    def corner_plot(self,filename):
-        chains = self.get_chain(filename)
-        c = ChainConsumer().add_chain(chains, parameters=self.likelihood.theory.labels)
-        fig = c.plotter.plot(truth=list(self.MLE(False)))
-        fig.set_size_inches(3 + fig.get_size_inches()) 
-        return fig
+
+        else:
+            c = ChainConsumer().add_chain(chains, parameters=self.likelihood.theory.labels)
+            fig = c.plotter.plot(truth=list(self.MLE(False)))
+            fig.set_size_inches(3 + fig.get_size_inches()) 
+        
+    
 
 
     
