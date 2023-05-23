@@ -13,14 +13,22 @@ class Kernels(object):
     """
         General Gaussian process modelling that all the specific kernels must be inherited from.
         Inputs would be the appropriate amplitude and scaling parameters needed for the particular model. 
-
+        This initialisation retuns the final covarinace matrices as functions of kernal paramters. 
         """
 
-    def __init__(self, model, parameters, data):
+    def __init__(self, model, parameters, data, nu = None):
 
         self.clight = 299792458. / 1000.  # km/s
 
-        self.kernels = ['SE', 'M92', 'M72']  # Possible kernel choices
+        self.kernels = ['SE', 'M92', 'M72', 'Mnu', 'dMnu']  # Possible kernel choices
+        # Here 'Mnu' is a generalised matern kernel with nu as a parameter
+        # 'dMnu' is the derivative of the generalised matern kernel with nu as a parameter
+
+        if 'Mnu' or 'dMnu' in self.kernels and nu is None:
+            print('Error: nu must be specified for the Mnu kernel')
+            print('nu must be specified as an array equal to the length of Mnu kernels')
+            print('Exiting...')
+            sys.exit(0)
 
         # The data must contain the list/lists of x-axes
         self.data = data
@@ -31,6 +39,7 @@ class Kernels(object):
         self.params = parameters
         self.nparams = len(parameters)
 
+        # To do: the self-scaled GP case should be handled outside the class and the parameters should be passed as a list of lists -- rewrite the code to handle this case
         if 'self-scaled' in self.model and (self.nparams == self.nmodel):
             self.ntasks = self.nmodel - 1
             self.model = self.model[:-1]
@@ -64,19 +73,85 @@ class Kernels(object):
         else:
             for i in range(self.ntasks):
                 if self.model[i] in self.kernels and len(self.params[i]) == 2:
-                    self.kernel_f[f'task_{i}'] = self.model[i]
-                    self.sig_f[f'task_{i}'] = self.params[i, 0]
-                    self.l_s[f'task_{i}'] = self.params[i, 1]
+                    self.kernel_f[f't_{i}'] = self.model[i]
+                    self.sig_f[f't_{i}'] = self.params[i, 0]
+                    self.l_s[f't_{i}'] = self.params[i, 1]
                     # To create a dictionary of data
-                    self.data_f[f'task_{i}'] = self.data[i]
+                    self.data_f[f't_{i}'] = self.data[i]
 
                 else:
                     print(self.model[i], self.params[i])
                     print('Error: model or parameters not specified correctly')
                     sys.exit(0)
 
-        # self.CovMat = self.Cov_Mat()
+        # self.kernel = self.initialise_kernel(self.model, self.data)
+    
+    def __call__(self, parameters):
+        """
+            This function is called when the class is called. It returns the covariance matrix for the GP model
+            """
+        self.params = parameters
+        self.CovMat = self.Cov_Mat()
+        return self.CovMat
 
+    def initialise_kernel(self, data, model, nu = None):
+        """
+            Initialises the kernel for the data and the choosen kernels for the joint GP model 
+            """
+        n_tasks = len(model)
+        x = {}
+        nu = {}
+        for i in range(n_tasks):
+            x[f't_{i}'] = data[i] # To create a dictionary of data
+            nu[f't_{i}'] = nu[i] # To create a dictionary of nu values
+        
+
+
+    def basis_fun(self, model, x, l_s, nu = None):
+        """ 
+            Defines the basis function for the GP model and returns a vector
+            Finally I define only ine single function for the basis function
+            This is independent of the amplitude paramter sigma_f
+            """
+        if model == 'SE':
+            return np.exp(- (x**2.)/(2. * l_s**2.))
+        if model == 'Mnu':
+            A = (nu / (2. * np.pi * l_s**2.))**(1./8.) * (sp.special.gamma(nu/2. - 1./4.)/sp.special.gamma(nu/2. + 1./4.))**(1./2.) * (sp.special.gamma(nu + 1./2.)/sp.special.gamma(nu))**(1./4.)
+            B = 2.**(5./4. - nu/2.) / sp.special.gamma(nu/2. - 1./4.)
+            C = (2. * nu)**(1./2.) * x**2. / l_s
+            return A**2. * B * C**(nu/2. - 1./4.) * sp.special.kv(nu/2. - 1./4., C)
+        
+    def d_basis_fun(self, model, x, l_s, nu = None):
+        """
+            Defines the derivative of the basis function for the GP model and returns a vector
+            Finally I define only ine single function for the basis function
+            This is independent of the amplitude paramter sigma_f
+            """
+        if model == 'SE':
+            return - x / l_s**2. * np.exp(- (x**2.)/(2. * l_s**2.))
+        if model == 'Mnu':
+            A = 2**(11./8. - nu/4.) * (nu / l_s**2.)**(1./4.) * (np.sqrt(nu) * np.sqrt(x**2.) / l_s)**(3./4. + nu/2.)
+            B = sp.special.kv(1./4. * (5. - 2. * nu), np.sqrt(2.) * np.sqrt(nu) * np.sqrt(x**2.) / l_s)
+            C = np.sqrt(sp.special.gamma(1./2. + nu) / sp.special.gamma(nu))
+            D = np.pi**(1./4.) * x * sp.special.gamma(1./4. + nu/2.)
+            return A * B * C / D 
+
+    def dd_basic_fun(self, model, x, l_s, nu = None):
+        """
+            Defines the second derivative of the basis function for the GP model and returns a vector
+            Finally I define only ine single function for the basis function"""
+        if model == 'SE':
+            return (x**2. - l_s**2.) / l_s**4. * np.exp(- (x**2.)/(2. * l_s**2.))
+        if model == 'Mnu':
+            A = l_s**2. * np.pi**(1./4.) * sp.special.gamma(1./4. + nu/2.) *2**(+25./8. + nu/4.)
+            B = (nu / l_s**2.)**(1./4.) * (np.sqrt(nu) * np.sqrt(x**2.) / l_s)**(nu/2.- 1./4.)
+            C = sp.special.kv(1./4. * (3. + 2. * nu), np.sqrt(2.) * np.sqrt(nu) * np.sqrt(x**2.) / l_s)
+            D = np.sqrt(sp.special.gamma(1./2. + nu) / sp.special.gamma(nu))
+            E = 4. * (l_s**2. * (3. + 4. * (-2. + nu) * nu) + 8. * nu**2. * x**2.)
+            F = sp.special.kv(1./4. * (7. + 2. * nu), np.sqrt(2.) * np.sqrt(nu) * np.sqrt(x**2.) / l_s)
+            G = np.sqrt(2. / nu / x**2.) * l_s * (l_s**2. * (- 9. + 2. * nu * (9. + 2. * nu - 4. * nu**2.)) - 32. * nu**2. * x**2.) 
+            
+            return A * B * D * ( G * C + E * F) / (E * D**2.) 
 
     def matern(self, nu, x1, x2, l_s):
         """ 
@@ -89,7 +164,7 @@ class Kernels(object):
             """
         
         # This fucntion returns nan when x1 = x2, so we need to replace nan with zero 
-        return np.nan_to_num((2.**(1.-nu)/sp.special.gamma(nu)) * ((np.sqrt(2.*nu) * np.abs(x1-x2))/l_s)**nu * sp.special.kv(nu, (np.sqrt(2.*nu) * np.abs(x1-x2))/l_s)) + np.eye(len(x1)) # np.nan_to_num() to replace nan with zero    
+        return np.nan_to_num((2.**(1.-nu)/sp.special.gamma(nu)) * ((np.sqrt(2.*nu) * np.abs(x1-x2))/l_s)**nu * sp.special.kv(nu, (np.sqrt(2.*nu) * np.abs(x1-x2))/l_s)) + np.eye(len(x1)) 
 
     
     def kernel(self, model, params, x1, x2=None):
@@ -107,47 +182,6 @@ class Kernels(object):
             mat_nu = 7./2.
             return params[0]**2. * self.matern(mat_nu, x1[:, None], x2[None, :], params[1]) 
 
-
-    def cross_kernel(self, model1, model2, params1, params2, x1, x2):
-        """ 
-            Defines the cross kernel function for the GP model and returns the covariance matrix 
-            """
-        # product of the sigmas
-        sig1sig2 = params1[0] * params2[0]
-        # product of the scale lengths
-        l1l2 = params1[1] * params2[1]
-        # quadrature of length scales
-        l1l2_quad = params1[1]**2. + params2[1]**2.
-        # difference between x1 and x2
-        x1x2 = x1[:, None]-x2[None, :]
-
-        if model1 == 'SE' and model2 == 'SE': # Squared Exponential kernel
-            # This fucntion boils down to the SE kernel function when the scale lengths are equal for both the datasets
-            return sig1sig2 * np.exp(- (x1x2**2.)/(l1l2_quad)) * np.sqrt(2. * l1l2 / l1l2_quad)
-        else:
-            print('Error: Cross kernel not defined')
-            sys.exit(0)
-
-    def Cov_Mat(self):
-        """ 
-            Defines the covariance matrix for the GP model and returns the covariance matrix 
-            """
-        # To create a dictionary of covariance matrices for each task
-        
-        for i in range(self.ntasks):
-            for j in range(self.ntasks):
-                if i == j:
-                    self.CovMat['task_{0}{1}'.format(i, j)] = self.kernel(self.kernel_f['task_{0}'.format(i)], self.params[i], self.data_f['task_{0}'.format(i)])
-                elif i < j:
-                    self.CovMat['task_{0}{1}'.format(i, j)] = np.transpose(self.cross_kernel(self.kernel_f['task_{0}'.format(i)], self.kernel_f['task_{0}'.format(j)], self.params[i], self.params[j], self.data_f['task_{0}'.format(i)], self.data_f['task_{0}'.format(j)]))
-                else:
-                    self.CovMat['task_{0}{1}'.format(i, j)] = np.transpose(self.CovMat['task_{0}{1}'.format(j, i)])
-        
-        # To join all the covariance matrices defined above in the dictionaries into one big covariance matrix taking into account the cross correlations between the datasets 
-        self.CovMat_all = np.block([[ self.CovMat['task_{0}{1}'.format(i, j)] for i in range(self.ntasks)] for j in range(self.ntasks)])  
-        
-        return self.CovMat_all
-    
     def derivative_kernel(self, model1, model2, params1, params2, x1, x2=None):
         """ 
             Defines the derivatives of cross kernel function for the GP model and returns a matrix 
@@ -183,3 +217,47 @@ class Kernels(object):
             sys.exit(0)
             
         return dK
+
+    def cross_kernel(self, model1, model2, params1, params2, x1, x2):
+        """ 
+            Defines the cross kernel function for the GP model and returns the covariance matrix 
+            """
+        # product of the sigmas
+        sig1sig2 = params1[0] * params2[0]
+        # product of the scale lengths
+        l1l2 = params1[1] * params2[1]
+        # quadrature of length scales
+        l1l2_quad = params1[1]**2. + params2[1]**2.
+        # difference between x1 and x2
+        x1x2 = x1[:, None]-x2[None, :]
+
+        if model1 == 'SE' and model2 == 'SE': # Squared Exponential kernel
+            # This fucntion boils down to the SE kernel function when the scale lengths are equal for both the datasets
+            return sig1sig2 * np.exp(- (x1x2**2.)/(l1l2_quad)) * np.sqrt(2. * l1l2 / l1l2_quad)
+        else:
+            print('Error: Cross kernel not defined')
+            sys.exit(0)
+
+    def Cov_Mat(self):
+        """ 
+            Defines the covariance matrix for the GP model and returns the covariance matrix 
+            """
+        # To create a dictionary of covariance matrices for each task
+        
+        for i in range(self.ntasks):
+            for j in range(self.ntasks):
+                if i == j:
+                    self.CovMat[f't_{i}{j}'] = self.kernel(self.kernel_f[f't_{i}'], self.params[i], self.data_f[f't_{i}'])
+                elif i < j:
+                    self.CovMat[f't_{i}{j}'] = np.transpose(self.cross_kernel(self.kernel_f[f't_{i}'], self.kernel_f[f't_{j}'], self.params[i], self.params[j], self.data_f[f't_{i}'], self.data_f[f't_{j}']))
+                else:
+                    self.CovMat[f't_{i}{j}'] = np.transpose(self.CovMat[f't_{j}{i}'])
+        
+        # To join all the covariance matrices defined above in the dictionaries into one big covariance matrix taking into account the cross correlations between the datasets 
+        self.CovMat_all = np.block([[ self.CovMat[f't_{i}{j}'] for i in range(self.ntasks)] for j in range(self.ntasks)])  
+        
+        return self.CovMat_all
+    
+    
+    
+    
