@@ -24,7 +24,7 @@ class Kernels(object):
         # Here 'Mnu' is a generalised matern kernel with nu as a parameter
         # 'dMnu' is the derivative of the generalised matern kernel with nu as a parameter
 
-        if 'Mnu' or 'dMnu' in self.kernels and nu is None:
+        if 'Mnu' in model and nu is None:
             print('Error: nu must be specified for the Mnu kernel')
             print('nu must be specified as an array equal to the length of Mnu kernels')
             print('Exiting...')
@@ -76,7 +76,6 @@ class Kernels(object):
                     self.kernel_f[f't_{i}'] = self.model[i]
                     self.sig_f[f't_{i}'] = self.params[i, 0]
                     self.l_s[f't_{i}'] = self.params[i, 1]
-                    # To create a dictionary of data
                     self.data_f[f't_{i}'] = self.data[i]
 
                 else:
@@ -99,11 +98,14 @@ class Kernels(object):
             Initialises the kernel for the data and the choosen kernels for the joint GP model 
             """
         n_tasks = len(model)
-        x = {}
-        nu = {}
-        for i in range(n_tasks):
-            x[f't_{i}'] = data[i] # To create a dictionary of data
-            nu[f't_{i}'] = nu[i] # To create a dictionary of nu values
+        x = self.data_f
+        nu_f = {}
+        if nu is not None:
+            nu_f[f't_{i}'] = nu[i]
+        
+        # for i in range(n_tasks):
+
+        return 0.0 
         
 
 
