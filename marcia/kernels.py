@@ -117,6 +117,12 @@ class Kernels(object):
             """
         if model == 'SE':
             return np.exp(- (x**2.)/(2. * l_s**2.))
+        if model == 'M92':
+            A = 48 * np.sqrt(3./35.) * (1./l_s**2.)**(5./4.) * x**2. * sp.special.kv(2., 3. * np.abs(x) / l_s) / np.pi 
+            return A
+        if model == 'M72':
+            A = np.sqrt(2./5.) * 7**(3./4.) * np.exp(- np.sqrt(7.) * np.abs(x) / l_s) * (1./l_s**2.)**(1./4.) * np.abs(x) * (1. + l_s / np.sqrt(7. * x**2.))/ l_s
+            return A
         if model == 'Mnu':
             A = (nu / (2. * np.pi * l_s**2.))**(1./8.) * (sp.special.gamma(nu/2. - 1./4.)/sp.special.gamma(nu/2. + 1./4.))**(1./2.) * (sp.special.gamma(nu + 1./2.)/sp.special.gamma(nu))**(1./4.)
             B = 2.**(5./4. - nu/2.) / sp.special.gamma(nu/2. - 1./4.)
