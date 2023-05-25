@@ -101,8 +101,6 @@ class Sampler:
             samples = MCSamples(samples=chains,names=names,labels=labels)
             g = plots.get_subplot_plotter()
             g.triangle_plot([samples], filled=True)
-
-
         else:
             c = ChainConsumer().add_chain(chains, parameters=self.likelihood.theory.labels)
             fig = c.plotter.plot(truth=list(self.MLE(False)))
