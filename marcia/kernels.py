@@ -2,11 +2,15 @@ import sys
 import cmath
 import numpy as np
 import scipy as sp
-from scipy.integrate import quad
 import scipy.constants as const
 import time
+import configparser
+from scipy.interpolate import interp1d
+from scipy.integrate import quad
+from scipy.interpolate import RegularGridInterpolator
 
 from marcia import Data
+from marcia import GPconfig
 
 
 class Kernels(object):
@@ -16,42 +20,39 @@ class Kernels(object):
         This initialisation retuns the final covarinace matrices as functions of kernal paramters. 
         """
 
-    def __init__(self, model, parameters, data, nu = None):
+    def __init__(self, parameters, data, filename = None):
 
         self.clight = 299792458. / 1000.  # km/s
 
-        self.kernels = ['SE', 'M92', 'M72', 'Mnu', 'dMnu']  # Possible kernel choices
+        self.kernels = ['SE', 'M92', 'M72', 'Mnu', 'dMnu', 'dSE']  # Possible kernel choices
         # Here 'Mnu' is a generalised matern kernel with nu as a parameter
         # 'dMnu' is the derivative of the generalised matern kernel with nu as a parameter
 
-        if 'Mnu' in model and nu is None:
-            print('Error: nu must be specified for the Mnu kernel')
-            print('nu must be specified as an array equal to the length of Mnu kernels')
-            print('Exiting...')
-            sys.exit(0)
+        if filename is None:
+            MTGP = GPconfig.GPConfig('GPconfig.ini').__dict__
+        else:
+            MTGP = GPconfig.GPConfig(filename).__dict__
+        self.models = MTGP['models']
+        self.nus = MTGP['nus']
+        self.n_Tasks = MTGP['n_Tasks']
+        self.nmodel = self.n_Tasks
+        self.self_scale = MTGP['self_scale']
 
         # The data must contain the list/lists of x-axes
         self.data = data
         self.ndata = len(data)
-        # The possible model cases are ['SE', 'SE', 'SE'] etc. for 3 tasks and ['SE', 'SE', 'SE', 'self-scaled'] for 3 tasks and a self-scaled GP
-        self.model = model
-        self.nmodel = len(model)
         self.params = parameters
         self.nparams = len(parameters)
 
         # To do: the self-scaled GP case should be handled outside the class and the parameters should be passed as a list of lists -- rewrite the code to handle this case
-        if 'self-scaled' in self.model and (self.nparams == self.nmodel):
+        if self.self_scale is True and (self.nparams == self.nmodel):
             self.ntasks = self.nmodel - 1
             self.model = self.model[:-1]
             # Implying that the scale length for all the datasets is set to be the same, we need sigma_f equal to the number of GPs and one l_s
             for i in range(self.ntasks-1):
                 self.params = np.append(self.params, parameters[-1])
 
-        elif 'self-scaled' not in model and (self.nparams == 2*len(self.model)):
-            # We have the number of parameters matching the number of GP tasks
-            self.ntasks = len(self.model)
-
-        elif 'self-scaled' not in model and (self.nparams != 2*len(model)):
+        elif self.self_scale is not True and (self.nparams != 2*self.nmodel):
             # We need atleast two paramters per GP task: {sigma_f, l_s}
             print('Error: Number of parameters does not match the model specifications')
             sys.exit(0)
@@ -93,43 +94,43 @@ class Kernels(object):
         self.CovMat = self.Cov_Mat()
         return self.CovMat
 
-    def initialise_kernel(self, data, model, nu = None):
-        """
-            Initialises the kernel for the data and the choosen kernels for the joint GP model 
-            """
-        n_tasks = len(model)
-        x = self.data_f
-        nu_f = {}
-        if nu is not None:
-            nu_f[f't_{i}'] = nu[i]
+    # def initialise_kernel(self, data):
+    #     """
+    #         Initialises the kernel for the data and the choosen kernels for the joint GP model 
+    #         """
+    #     n_tasks = len(model)
+    #     x = self.data_f
+    #     nu_f = {}
+    #     if nu is not None:
+    #         nu_f[f't_{i}'] = nu[i]
         
-        # for i in range(n_tasks):
+    #     # for i in range(n_tasks):
 
-        return 0.0 
+    #     return 0.0 
         
 
-
-    def basis_fun(self, model, x, l_s, nu = None):
+    def gMdef(self, tau, nu, sigma1, l_s):
         """ 
             Defines the basis function for the GP model and returns a vector
             Finally I define only ine single function for the basis function
             This is independent of the amplitude paramter sigma_f
             """
-        if model == 'SE':
+        x = np.abs(tau)
+        if nu == '0.0':
             return np.exp(- (x**2.)/(2. * l_s**2.))
-        if model == 'M92':
+        if nu == '9/2':
             A = 48 * np.sqrt(3./35.) * (1./l_s**2.)**(5./4.) * x**2. * sp.special.kv(2., 3. * np.abs(x) / l_s) / np.pi 
             return A
-        if model == 'M72':
+        if nu == '7/2':
             A = np.sqrt(2./5.) * 7**(3./4.) * np.exp(- np.sqrt(7.) * np.abs(x) / l_s) * (1./l_s**2.)**(1./4.) * np.abs(x) * (1. + l_s / np.sqrt(7. * x**2.))/ l_s
             return A
-        if model == 'Mnu':
+        else:
             A = (nu / (2. * np.pi * l_s**2.))**(1./8.) * (sp.special.gamma(nu/2. - 1./4.)/sp.special.gamma(nu/2. + 1./4.))**(1./2.) * (sp.special.gamma(nu + 1./2.)/sp.special.gamma(nu))**(1./4.)
             B = 2.**(5./4. - nu/2.) / sp.special.gamma(nu/2. - 1./4.)
             C = (2. * nu)**(1./2.) * x**2. / l_s
             return A**2. * B * C**(nu/2. - 1./4.) * sp.special.kv(nu/2. - 1./4., C)
         
-    def d_basis_fun(self, model, x, l_s, nu = None):
+    def gdMdef(self, model, x, l_s, nu = None):
         """
             Defines the derivative of the basis function for the GP model and returns a vector
             Finally I define only ine single function for the basis function
@@ -144,7 +145,7 @@ class Kernels(object):
             D = np.pi**(1./4.) * x * sp.special.gamma(1./4. + nu/2.)
             return A * B * C / D 
 
-    def dd_basic_fun(self, model, x, l_s, nu = None):
+    def gddMdef(self, model, x, l_s, nu = None):
         """
             Defines the second derivative of the basis function for the GP model and returns a vector
             Finally I define only ine single function for the basis function"""
@@ -160,6 +161,24 @@ class Kernels(object):
             G = np.sqrt(2. / nu / x**2.) * l_s * (l_s**2. * (- 9. + 2. * nu * (9. + 2. * nu - 4. * nu**2.)) - 32. * nu**2. * x**2.) 
             
             return A * B * D * ( G * C + E * F) / (E * D**2.) 
+
+    def gMMdef(self, tau, u, nu1, sigma1, l1, nu2, sigma2, l2):
+        gM1 = self.gMdef(u, nu1, sigma1, l1)
+        gM2 = self.gMdef(tau - u, nu2, sigma2, l2)
+        return gM1 * gM2
+
+    def KcMM(self, l1_values, l2_values, tau_values):
+    
+        integrals = np.zeros((len(tau_values), len(l2_values), len(l1_values)))
+
+        for i, tau in enumerate(tau_values):
+            for j, l2 in enumerate(l2_values):
+                for k, l1 in enumerate(l1_values):
+                    integrand = lambda u: self.gMMdef(tau, u, 7/2, 1.0, l1, 7/2, 1.0, l2)
+                    integral, _ = quad(integrand, -np.inf, np.inf, epsabs=1e-8, epsrel=1e-8, limit=100)
+                    integrals[i, j, k] = integral
+        
+        return RegularGridInterpolator((tau_values, l2_values, l1_values), integrals, bounds_error=False, fill_value=None)
 
     def matern(self, nu, x1, x2, l_s):
         """ 
@@ -265,7 +284,4 @@ class Kernels(object):
         self.CovMat_all = np.block([[ self.CovMat[f't_{i}{j}'] for i in range(self.ntasks)] for j in range(self.ntasks)])  
         
         return self.CovMat_all
-    
-    
-    
     
