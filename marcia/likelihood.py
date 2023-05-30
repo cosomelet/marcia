@@ -62,3 +62,4 @@ class Likelihood(object):
         if not np.isfinite(lp):
             return -np.inf
         return lp + self.logLike(theta)
+

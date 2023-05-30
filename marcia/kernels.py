@@ -130,7 +130,7 @@ class Kernels(object):
             C = (2. * nu)**(1./2.) * x**2. / l_s
             return A**2. * B * C**(nu/2. - 1./4.) * sp.special.kv(nu/2. - 1./4., C)
         
-    def gdMdef(self, model, x, l_s, nu = None):
+    def gdMdef(self, model, x, l_s, nu = None): 
         """
             Defines the derivative of the basis function for the GP model and returns a vector
             Finally I define only ine single function for the basis function
@@ -174,7 +174,7 @@ class Kernels(object):
         for i, tau in enumerate(tau_values):
             for j, l2 in enumerate(l2_values):
                 for k, l1 in enumerate(l1_values):
-                    integrand = lambda u: self.gMMdef(tau, u, 7/2, 1.0, l1, 7/2, 1.0, l2)
+                    integrand = lambda u: self.gMMdef(tau, u, nu1, 1.0, l1, nu2, 1.0, l2)
                     integral, _ = quad(integrand, -np.inf, np.inf, epsabs=1e-8, epsrel=1e-8, limit=100)
                     integrals[i, j, k] = integral
         

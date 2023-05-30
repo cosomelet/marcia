@@ -1,4 +1,6 @@
+import os 
 import numpy as np
+import toml
 import scipy.integrate as it
 from scipy.integrate import quad
 from marcia.params import Params
@@ -36,6 +38,11 @@ class Cosmology_base(object):
         self.Mbsample = False
         self.Obsample = False
         
+        self.const = {}
+        const = {}
+        const = toml.load(os.path.join(os.path.dirname(__file__), 'constants.ini'))['constants']
+        for key, value in const.items():
+            self.const[key] = value
 
         if 'r_d' in params:
             self.rdsample = True
