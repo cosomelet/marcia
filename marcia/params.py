@@ -2,8 +2,22 @@ import toml
 import os
 
 
+
 class DictToObject:
-    def __init__(self, dictionary):
+    """Converts a dictionary to an object.
+
+    This class uses the __init__ method to convert a dictionary to an object.
+    It does so by iterating through the dictionary and setting each key as
+    an attribute of the object, with the value of the key being the value of
+    the attribute.
+    """
+
+    def __init__(self, dictionary: dict):
+        """Converts a dictionary to an object.
+
+        Args:
+            dictionary (dict): The dictionary to convert to an object.
+        """
         for key, value in dictionary.items():
             setattr(self, key, value)
 
