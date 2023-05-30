@@ -21,6 +21,8 @@ filename = 'GPconfig.ini'
 # self scale implies all the tasks have the same length scale paramter. 
 config['GENERAL'] = {'n_Tasks': n_Tasks, 'self_scale': True} 
 
+config['KERNEL'] = {'Interpolate': True, 'Method': 'cubic', 'n_points': 1000 }
+
 
 # Set the configuration for each task: Need not be a loop, can be done manually as well 
 for i in range(n_Tasks):
@@ -74,3 +76,8 @@ class GPConfig:
             sigma_f_max = config.getfloat(Task, 'sigma_f_max')
             # Create the GPparams class
             self.__dict__[Task] = {'model': model, 'nu': nu, 'l_min': l_min, 'l_max': l_max, 'sigma_f_min': sigma_f_min, 'sigma_f_max': sigma_f_max}
+        
+        # Set the interpolation parameters
+        self.Interpolate = config.getboolean('KERNEL', 'Interpolate')
+        self.Method = config.get('KERNEL', 'Method')
+        self.n_points = config.getint('KERNEL', 'n_points')
