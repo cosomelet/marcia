@@ -9,7 +9,27 @@ from marcia.backend import cosmology  as cbackend
 
 
 
-def Cosmology(model,parameters,prior_file=None):
+
+def Cosmology(model:str,parameters:list,prior_file:str=None):
+    """
+    Calculate cosmological parameters for a given cosmology
+
+    Parameters
+    ----------
+    model : string
+        Name of cosmological model to use.
+    parameters : list
+        List of model parameters to calculate. Can include
+        'H0': Hubble constant
+        'Omega_m': matter density parameter
+        'Omega_b': baryon density parameter
+    prior_file : string
+        Name of file containing priors on parameters
+
+    Returns
+    -------
+    cosmological model object
+    """
     models = ['LCDM','wCDM','CPL','CPL3','kwCPL','kCPL3','kLCDM','XCDM','kXCDM']
     if model not in models:
         raise ValueError(
@@ -21,14 +41,13 @@ def Cosmology(model,parameters,prior_file=None):
 
 class Cosmology_base(object):
     """
-        General background theory that all the theories must be inherited from.
-        Inputs would be the appropriate cosmological parameters needed for the particular model. 
-        To change
-        """
+    General background theory that all the theories must be inherited from.
+    Inputs would be the appropriate cosmological parameters needed for the particular model. 
+    To change
+    """
     
     def __init__(self, params,prior_file=None):
-        # model = [] with rd, mb ,ob
-        # params = ['ho'] 
+
         self.param = Params(params,prior_file)
         self.priors = self.param.Priors 
         self.labels = self.param.Labels
