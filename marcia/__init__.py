@@ -5,4 +5,4 @@ from .GPconfig import GPConfig
 from .database import Data 
 from .likelihood import Likelihood
 from .sampler import Sampler
-from .kernels import Kernels
+from .kernels import *
