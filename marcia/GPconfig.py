@@ -37,6 +37,13 @@ for i in range(n_Tasks):
     config.set(Task, 'sigma_f_min', '0.001')
     config.set(Task, 'sigma_f_max', '10.0')
 
+# if necessary to include a intrinsic scatter or an offset to the covariance matrix 
+config['INTRINSIC_SCATTER'] = {'sigma_int': True, 'offset': True}
+if config['INTRINSIC_SCATTER']['sigma_int']:
+    config['INTRINSIC_SCATTER']['sigma_int'] = '0.1'
+if config['INTRINSIC_SCATTER']['offset']:
+    config['INTRINSIC_SCATTER']['offset'] = '0.0001'
+
 # Write the configparser object to a file
 with open(filename, 'w') as configfile:
     config.write(configfile)
