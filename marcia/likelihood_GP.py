@@ -21,6 +21,8 @@ class Likelihood_GP(object):
         self.nTasks = MTGP['n_Tasks']
         self.nmodel = self.nTasks
         self.self_scale = MTGP['self_scale']
+        self.scatter = MTGP['INTRINSIC_SCATTER']['sigma_int']
+
         # To define the priors for the GP hyperparameters using the the GPconfig file
         self.priors = []
         for i in range(self.nTasks):
@@ -40,6 +42,25 @@ class Likelihood_GP(object):
 
         # intialize the kernals from Kernel class
         self.GP_kernels = kern.Kernels(list(data.x.values())) 
+
+    # def set_theta(self, theta):
+    #     # To reorganise the theta values for the GP hyperparameters in accordanace with the GPconfig file
+    #     # theta contains no self-scale: [sigma_f_1, l_1, sigma_f_2, l_2, ...] 
+    #     # or [sigma_f_1, sigma_f_2, ..., l] if self_scale is True 
+    #     # and possibly with intrinsic scatter at the end [..., sigma_int] 
+
+    #     if self.self_scale == False and len(theta) != 2*self.nTasks and self.scatter == False:
+    #         raise ValueError('The number of hyperparameters does not match the number of tasks')
+    #     elif self.self_scale == False and len(theta) != 2*self.nTasks+1 and self.scatter == True:
+
+    #         params = []
+    #         for i in range(self.nTasks):
+    #             params.append(theta[2*i])
+    #             params.append(theta[2*i+1])
+    #         params = np.array(params)
+
+
+    #     return params
 
 
     def logPrior(self, theta):
