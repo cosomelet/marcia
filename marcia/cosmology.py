@@ -5,7 +5,8 @@ import scipy.integrate as it
 from scipy.integrate import quad
 from marcia.params import Params
 from scipy.interpolate import interp1d
-from marcia.backend import cosmology  as cbackend
+from marcia.backend import cosmology_cython  as cybackend
+from marcia.backend import cosmology as cbackend
 
 
 
@@ -99,10 +100,13 @@ class Cosmology_base(object):
         d = self._transverse_distance_(parameters,z_inp)
         return cbackend.interpolate(z_inp,z,d)
 
-    def hubble_rate(self,parameters, z):
+    def hubble_rate(self,parameters, z,c=False):
         p = self.param(parameters)
         de = self.dark_energy_f(parameters,z)
-        return cbackend.hubble_rate(p.H0,p.Omega_m,p.Omega_b,p.Omega_k,de, z)
+        if c:
+            return cybackend.hubble_rate(p.H0,p.Omega_m,p.Omega_b,p.Omega_k,de, z)
+        else:
+            return cbackend.hubble_rate(p.H0,p.Omega_m,p.Omega_b,p.Omega_k,de, z)
 
     #To define the value of r_d using the Aubourg15 formula
 

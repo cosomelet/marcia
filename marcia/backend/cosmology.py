@@ -1,12 +1,26 @@
-from numba import jit
+from numba import jit,float64,prange
 import numpy as np
 from scipy.integrate import odeint
 
+# @jit(nopython=True)
+# def hubble_rate(H0,Omega_m,Omega_b,Omega_k,de, z):
+#     Omega_r = 4.18343*10**-5./(H0/100.)**2.
+#     E2 = Omega_r*((1. + z)**4) + Omega_m*((1. + z)**3) + Omega_b*((1. + z)**3) + Omega_k*((1. + z)**2) + (1. - Omega_m - Omega_k - Omega_b - Omega_r)*de
+#     Hofz = H0*np.sqrt(E2)
+#     return Hofz
+
+
+
 @jit(nopython=True)
-def hubble_rate(H0,Omega_m,Omega_b,Omega_k,de, z):
-    Omega_r = 4.18343*10**-5./(H0/100.)**2.
-    E2 = Omega_r*((1. + z)**4) + Omega_m*((1. + z)**3) + Omega_b*((1. + z)**3) + Omega_k*((1. + z)**2) + (1. - Omega_m - Omega_k - Omega_b - Omega_r)*de
-    Hofz = H0*np.sqrt(E2)
+def hubble_rate(H0, Omega_m, Omega_b, Omega_k, de, z):
+    Omega_r = 4.18343e-5 / (H0 / 100.)**2
+    n = z.shape[0]
+    Hofz = np.empty(n, dtype=np.float64)
+
+    for i in prange(n):
+        E2 = Omega_r * ((1. + z[i])**4) + Omega_m * ((1. + z[i])**3) + Omega_b * ((1. + z[i])**3) + Omega_k * ((1. + z[i])**2) + (1. - Omega_m - Omega_k - Omega_b - Omega_r) * de[i]
+        Hofz[i] = H0 * np.sqrt(E2)
+
     return Hofz
 
 @jit(nopython=True)
