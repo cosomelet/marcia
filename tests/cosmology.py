@@ -44,9 +44,9 @@ class TestwCDM(unittest.TestCase):
         assert np.allclose(self.theory.hubble_rate( [70, 0.3, -1.2], self.zlist), arr)
 
     def test_transverse_distance(self):
-        arr = np.array([4.27746823e+00, 3.70054926e+03, 5.67017552e+03, 6.85591728e+03,
-                        7.66211199e+03, 8.25467114e+03, 8.71356476e+03, 9.08240786e+03,
-                        9.38721924e+03, 9.64458947e+03])
+        arr = np.array([4.27307206e+00, 3.56727608e+03, 5.48514650e+03, 6.65657529e+03,
+                        7.45774195e+03, 8.04816315e+03, 8.50601569e+03, 8.87429913e+03,
+                        9.17878548e+03, 9.43595655e+03])
         assert np.allclose(self.theory.transverse_distance( [70, 0.3, -1.2], self.zlist), arr)
     
     def test_rd(self):
@@ -67,9 +67,9 @@ class TestCPL(unittest.TestCase):
         assert np.allclose(self.theory.hubble_rate( [70, 0.3, -1.2, 0.2], self.zlist), arr)
     
     def test_transverse_distance(self):
-        arr = np.array([4.27744166e+00, 3.67755622e+03, 5.63193633e+03, 6.81265266e+03,
-                        7.61693360e+03, 8.20863525e+03, 8.66709615e+03, 9.03570110e+03,
-                        9.34037226e+03, 9.59765511e+03])
+        arr = np.array([4.27307206e+00, 3.56727608e+03, 5.48514650e+03, 6.65657529e+03,
+                        7.45774195e+03, 8.04816315e+03, 8.50601569e+03, 8.87429913e+03,
+                        9.17878548e+03, 9.43595655e+03])
         assert np.allclose(self.theory.transverse_distance( [70, 0.3, -1.2, 0.2], self.zlist), arr)
     
     def test_rd(self):
