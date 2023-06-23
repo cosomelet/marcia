@@ -5,7 +5,6 @@ import scipy.integrate as it
 from scipy.integrate import quad
 from marcia.params import Params
 from scipy.interpolate import interp1d
-from marcia.backend import cosmology_cython  as cybackend
 from marcia.backend import cosmology as cbackend
 
 
@@ -100,13 +99,16 @@ class Cosmology_base(object):
         d = self._transverse_distance_(parameters,z_inp)
         return cbackend.interpolate(z_inp,z,d)
 
-    def hubble_rate(self,parameters, z,c=False):
+    def hubble_rate(self,parameters, z):
         p = self.param(parameters)
         de = self.dark_energy_f(parameters,z)
-        if c:
-            return cybackend.hubble_rate(p.H0,p.Omega_m,p.Omega_b,p.Omega_k,de, z)
-        else:
-            return cbackend.hubble_rate(p.H0,p.Omega_m,p.Omega_b,p.Omega_k,de, z)
+        return cbackend.hubble_rate(p.H0,p.Omega_m,p.Omega_b,p.Omega_k,de, z)
+    
+    def inv_hubble_rate(self,parameters, z):
+        p = self.param(parameters)
+        de = self.dark_energy_f(parameters,z)
+        return cbackend.inv_hubble_rate(p.H0,p.Omega_m,p.Omega_b,p.Omega_k,de, z)
+            
 
     #To define the value of r_d using the Aubourg15 formula
 
@@ -199,13 +201,17 @@ class wCDM(Cosmology_base):
     def _transverse_distance_(self,parameters, z):
         # Use this print, in case needed for Error_handling.
         # print ''
-        def Ly(y,t):
-            # Here this could be replaced with expansion_rate_int if needed 
-            return 1./self.hubble_rate(parameters,t)
 
-        y=it.odeint(Ly,0.0,z)
-        tint = np.array(y[:,0])
-        return np.nan_to_num( self.clight* tint)
+        # def Ly(y,t):
+        #     return self.inv_hubble_rate(parameters,np.array([t]))
+
+        # y=it.odeint(Ly,0.0,z)
+        # tint = np.array(y[:,0])
+        # return self.clight* tint
+
+        p = self.param(parameters)
+        de = self.dark_energy_f(parameters, z)
+        return cbackend.transverse_distance(p.H0,p.Omega_m,p.Omega_b,p.Omega_k,de, z,self.clight)
     
 class LCDM(wCDM):
     def __init__(self, parameters,prior_file=None):

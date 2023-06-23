@@ -72,7 +72,7 @@ class Sampler:
             
             return sampler
 
-    @temporarily_false('resume')
+    #@temporarily_false('resume')
     def get_burnin(self):
         tau = self.sampler().get_autocorr_time()
         burnin = int(2 * np.max(tau))

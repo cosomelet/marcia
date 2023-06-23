@@ -1,8 +1,13 @@
 import toml
 import os
+from numba.experimental import jitclass
+from numba import types
 
 
-
+specDictToObject = [
+    ('dictionary', types.DictType(types.unicode_type, types.Any)),
+]
+#@jitclass(specDictToObject)
 class DictToObject:
     """Converts a dictionary to an object.
 
@@ -21,16 +26,25 @@ class DictToObject:
         for key, value in dictionary.items():
             setattr(self, key, value)
 
+# spec = [
+#     ('parameters', types.ListType(types.unicode_type)),
+#     ('act_params', types.DictType(types.Any)),
+#     ('upd_priors', types.DictType(types.Any)),
+# ]
+
+#@jitclass(spec)
 class Params:
 
     def __init__(self,parameters,filepath=None):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         act_filepath = os.path.join(current_dir,'params.ini')
-        self.act_params = toml.load(act_filepath)
+        act_params = toml.load(act_filepath)
+        self.act_params = act_params
         if filepath is not None:
-            self.upd_priors = toml.load(filepath)['Priors']
+            upd_priors = toml.load(filepath)['Priors']
+            self.upd_priors = upd_priors
         else:
-            self.upd_priors = None
+            self.upd_priors = {}
         
         self.parameters = parameters
         check = self.check_params
@@ -72,7 +86,7 @@ class Params:
         prior_dict = self.act_params['Priors']
         prior = []
         for param in self.parameters:
-            if (self.upd_priors is not None) and (param in self.upd_priors.keys()):
+            if (len(self.upd_priors.keys()) == 0) and (param in self.upd_priors.keys()):
                 prior.append(self.upd_priors[param])
             else:
                 prior.append(prior_dict[param])
