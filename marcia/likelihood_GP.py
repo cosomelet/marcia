@@ -17,21 +17,6 @@ class Likelihood_GP(object):
         else:
             MTGP = GP_filename.GPConfig(GP_filename).__dict__
 
-        # To read the cosmology file and inculde a comological mean function in the GP
-        if cosmo_filename is None:
-            cosmo = cosmo_filename.CosmoConfig('cosmology.ini').__dict__
-        else:
-            cosmo = cosmo_filename.CosmoConfig(cosmo_filename).__dict__
-
-        # To include the cosmological mean function in the GP
-        if cosmo['sample'] == False:
-            self.cosmo = cosmo['model']
-        elif cosmo['sample'] == True:
-            # Yet to define the cosmological mean function for the sampled cosmology with paramters sampled amongside the GP hyperparameters
-            pass
-        else:
-            self.mean = [0.0] * len(np.flatten(data.x.values()) )
-
         # read the models and the number of tasks
         self.models = MTGP['models']
         self.nTasks = MTGP['n_Tasks']
