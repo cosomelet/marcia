@@ -1,19 +1,19 @@
 using LinearAlgebra
 using DifferentialEquations
 
-function hubble_rate(H0, Omega_m, Omega_b, Omega_k, de, z)
-    Omega_r = 4.18343e-5 / (H0 / 100.0)^2
-    E2 = Omega_r * (1.0 + z)^4 + Omega_m * (1.0 + z)^3 + Omega_b * (1.0 + z)^3 + Omega_k * (1.0 + z)^2 + (1.0 - Omega_m - Omega_k - Omega_b - Omega_r) * de
-    Hofz = H0 * sqrt(E2)
-    return Hofz
+function hubble_rate(H₀,Ωm,Ωb,Ωk,w,z)
+    Ωr = 4.18343e-5 / (H₀/ 100.0)^2
+    Ez = Ωr .* (1.0 .+ z)^4 + Ωm .* (1.0 .+ z)^3 + Ωb .* (1.0 .+ z)^3 + Ωk .* (1.0 .+ z)^2 + (1.0 - Ωm - Ωk - Ωb - Ωr) .* w
+    Hz = H₀ .* sqrt(Ez)
+    return Hz
 end
 
-function dark_energy_f_wCDM(w0, wa, z)
-    return exp(3.0 * (-wa + wa / (1.0 + z) + (1.0 + w0 + wa) * log(1.0 + z)))
+function dark_energy_f_wCDM(w₀, wₐ, z)
+    return exp(3.0 * (-wₐ + wₐ / (1.0 .+ z) + (1.0 + w₀ + wₐ) * log(1.0 + z)))
 end
 
-function inv_hubble_rate(H0, Omega_m, Omega_b, Omega_k, de, z)
-    return 1.0 / hubble_rate(H0, Omega_m, Omega_b, Omega_k, de, z)
+function inv_hubble_rate(H₀,Ωm,Ωb,Ωk,w,z)
+    return 1.0 / hubble_rate(H₀,Ωm,Ωb,Ωk,w,z)
 end
 
 function sound_horizon(H0, Omega_b, Omega_m, Obsample)
