@@ -17,11 +17,14 @@ n_Tasks = 2
 # To set the name of the file to be written,can be changed to any name however called correctly in the code
 filename = 'GPconfig.ini'
 
-# Set the number of tasks in the GENERAL section
 # self scale implies all the tasks have the same length scale paramter. 
 config['GENERAL'] = {'n_Tasks': n_Tasks, 'self_scale': True} 
 
 config['KERNEL'] = {'Interpolate': True, 'Method': 'cubic', 'n_points': 100 }
+
+config['COSMO'] = {'cosmo_model': 'LCDM', 'sample': False} # 'LCDM' or 'wCDM', if sample is False then the mean is fixed to the fiducial cosmology
+
+config['ANALYSIS'] = {'method': 'optimise'} # 'optimise' or 'mcmc'
 
 
 # Set the configuration for each task: Need not be a loop, can be done manually as well 
@@ -73,6 +76,14 @@ class GPConfig:
         self.Interpolate = config.getboolean('KERNEL', 'Interpolate')
         self.Method = config.get('KERNEL', 'Method')
         self.n_points = config.getint('KERNEL', 'n_points')
+
+        # Set the cosmology part 
+        self.cosmo_model = config.get('COSMO', 'cosmo_model')
+        self.sample = config.getboolean('COSMO', 'sample')
+
+        # Set the analysis part
+        self.method = config.get('ANALYSIS', 'method')
+
 
         # Set the configuration for each task
         for i in range(self.n_Tasks):
