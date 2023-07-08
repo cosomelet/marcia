@@ -11,22 +11,19 @@ class Likelihood_GP(object):
     def __init__(self, data, GP_filename=None, cosmo_filename=None):
         
         # Read form the GP config file
-        # read the config file
-        if GP_filename is None:
-            MTGP = GP_filename.GPConfig('GPconfig.ini').__dict__
-        else:
-            MTGP = GP_filename.GPConfig(GP_filename).__dict__
+        MTGP = GPconfig.GPConfig(GP_filename if GP_filename else 'GPconfig.ini').__dict__
 
         # read the models and the number of tasks
         self.models = MTGP['models']
         self.nTasks = MTGP['n_Tasks']
         self.nmodel = self.nTasks
         self.self_scale = MTGP['self_scale']
-        self.scatter = MTGP['INTRINSIC_SCATTER']['sigma_int']
+        self.scatter = MTGP['sigma_int']
 
         # To define the priors for the GP hyperparameters using the the GPconfig file
         self.priors = []
         for i in range(self.nTasks):
+            i = i+1 # To start from 1
             self.priors.append([MTGP[f'Task_{i}']['sigma_f_min'], MTGP[f'Task_{i}']['sigma_f_max']])
             self.priors.append([MTGP[f'Task_{i}']['l_min'], MTGP[f'Task_{i}']['l_max']])
             
@@ -41,14 +38,22 @@ class Likelihood_GP(object):
         self.x, self.y, self.cov = self.d()
         self.D_covmat = self.cov
 
+        # To set the mean function 
+        self.mean = [0.0]*len(self.y)
+        # if MTGP['cosmo_model'] == None:
+        #     self.mean = [0.0]*len(self.y)
+        # else:
+        #     # To read the cosmology config file
+        #     raise NotImplementedError('Cosmology mean is not implemented yet')
+
         # intialize the kernals from Kernel class
-        self.GP_kernels = kern.Kernels(list(data.x.values()))
+        self.GP_kernels = kern.Kernels(list(self.d.x.values()), filename=GP_filename)
 
     def set_theta(self, theta):
         # To reorganise the theta values for the GP hyperparameters in accordanace with the GPconfig file
-        # theta contains no self-scale: [sigma_f_1, l_1, sigma_f_2, l_2, ...] 
-        # or [sigma_f_1, sigma_f_2, ..., l] if self_scale is True 
-        # and possibly with intrinsic scatter at the end [..., sigma_int] 
+        # theta contains no self-scale: [sigma_f_1, l_1, sigma_f_2, l_2, ...]
+        # or [sigma_f_1, sigma_f_2, ..., l] if self_scale is True
+        # and possibly with intrinsic scatter at the end [..., sigma_int]
 
         if self.self_scale == False and len(theta) != 2*self.nTasks and self.scatter == False:
             raise ValueError('The number of hyperparameters does not match the number of tasks')
@@ -82,11 +87,11 @@ class Likelihood_GP(object):
         # We define the GP likelihood here
         chi2 = 0
         # To call the GP class to get the covariance matrix
-        GP_covmat = self.GP_kernels(theta)
+        GP_covmat = self.GP_kernels.Cov_Mat(theta)
         Total_covmat = GP_covmat + self.D_covmat
 
         # To perform cholesky decomposition
-        L = np.linalg.cholesky(Total_covmat)
+        L = np.linalg.cholesky(Total_covmat + 1e-6*np.eye(len(Total_covmat)))
         L_inv = np.linalg.inv(L)
         y = self.y - self.mean
         y_inv = np.dot(L_inv, y)
