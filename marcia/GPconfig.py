@@ -84,6 +84,10 @@ class GPConfig:
         # Set the analysis part
         self.method = config.get('ANALYSIS', 'method')
 
+        # Set the intrinsic scatter and offset parameters
+        self.sigma_int = config.getfloat('INTRINSIC_SCATTER', 'sigma_int')
+        self.offset = config.getfloat('INTRINSIC_SCATTER', 'offset')
+    
 
         # Set the configuration for each task
         for i in range(self.n_Tasks):

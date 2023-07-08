@@ -4,5 +4,6 @@ from .params import Params
 from .GPconfig import GPConfig
 from .database import Data 
 from .likelihood import Likelihood
+from .likelihood_GP import Likelihood_GP
 from .sampler import Sampler
 from .kernels import *
