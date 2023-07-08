@@ -13,7 +13,7 @@ __datapath__ = os.path.join(__path__,'../' 'Data')
 class Data:
 
     def __init__(self,data,file_fs8=0,Lambda=1,b=1,sigma_sys=0.7571,H0=1,):
-        datalist = ['CC','BAO-alam','BAO-zhao','GR','Lya','GRB','SNE','QSA']
+        datalist = ['CC','BAO-alam','BAO-zhao','GR','Lya','GRB','SNE','QSA', 'Planck_TT', 'Planck_EE', 'Planck_TE']
         if type(data) is str:
             assert data in datalist, f'{data} is not in {datalist}'
             self.data = [data]
@@ -92,6 +92,12 @@ class Data:
             return self.get_SNE()
         elif choose == 'QSA':
             return self.get_QSA()
+        elif choose == 'Planck_TT':
+            return self.get_CMB_planck_TT()
+        elif choose == 'Planck_EE':
+            return self.get_CMB_planck_EE()
+        elif choose == 'Planck_TE':
+            return self.get_CMB_planck_TE()
         else:
             raise ValueError(f'{choose} is not a valid data set')
     
@@ -187,3 +193,32 @@ class Data:
         covar = np.diag(sigma**2)
         return x,y,covar
 
+    def get_CMB_planck_TT(self):
+        # This is the Planck 2018 data special case where we want 
+        # to use the TT data only
+        data = loadtxt(os.path.join(__datapath__, 'Planck_Spectra','COM_PowerSpect_CMB-TT-binned_R3.01.txt'))
+        x = data[:,0]
+        y = data[:,1]
+        sigma = (data[:,2] + data[:,3])/2
+        covar = np.diag(sigma**2)
+        return x,y,covar
+    
+    def get_CMB_planck_EE(self):
+        # This is the Planck 2018 data special case where we want 
+        # to use the EE data only
+        data = loadtxt(os.path.join(__datapath__, 'Planck_Spectra','COM_PowerSpect_CMB-EE-binned_R3.02.txt'))
+        x = data[:,0]
+        y = data[:,1]
+        sigma = (data[:,2] + data[:,3])/2
+        covar = np.diag(sigma**2)
+        return x,y,covar
+    
+    def get_CMB_planck_TE(self):
+        # This is the Planck 2018 data special case where we want 
+        # to use the TE data only
+        data = loadtxt(os.path.join(__datapath__, 'Planck_Spectra','COM_PowerSpect_CMB-TE-binned_R3.02.txt'))
+        x = data[:,0]
+        y = data[:,1]
+        sigma = (data[:,2] + data[:,3])/2
+        covar = np.diag(sigma**2)
+        return x,y,covar
