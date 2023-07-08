@@ -1,20 +1,24 @@
 import sys
+import os
+
 import cmath
 import numpy as np
 import scipy as sp
 import scipy.constants as const
-import time
-import configparser
 from scipy.interpolate import interp1d
 from scipy.integrate import quad
 from scipy.interpolate import RegularGridInterpolator
+
+import time
+import configparser
+
 from multiprocessing import Pool
 import itertools
+import pickle
 
 from marcia import Data
 from marcia import GPconfig
-from marcia.backend import kernel  as kernel
-
+from marcia.backend import kernel as kernel
 
 class Kernels(object):
     """
@@ -23,87 +27,90 @@ class Kernels(object):
         This initialisation retuns the final covarinace matrices as functions of kernal paramters. 
         """
 
-    def __init__(self, data, filename = None):
+    def __init__(self, data, filename = None, verbose = False):
         """
-        Initialisation simply takes the data and the filename for the config file, which declares all the GP 
+        Initialisation takes the data and the filename for the config file, which declares all the GP 
         configurations.
         """    
         self.clight = 299792458. / 1000.  # km/s
-
-        # read the config file
-        if filename is None:
-            MTGP = GPconfig.GPConfig('GPconfig.ini').__dict__
-        else:
-            MTGP = GPconfig.GPConfig(filename).__dict__
+        # Read the config file
+        self.ini_path = os.path.join(os.path.dirname(__file__), 'GPconfig.ini')
+        print(f'Loading the config file from {self.ini_path} ... ')
+        MTGP = GPconfig.GPConfig(filename if filename else self.ini_path).__dict__
         
-        # read the models and the number of tasks
+        # Read the models and the number of tasks
         self.models = MTGP['models']
         self.nTasks = MTGP['n_Tasks']
         self.nmodel = self.nTasks
-        self.self_scale = MTGP['self_scale']
 
-        # read the nus from the config file
+        # Read the nus from the config file
         self.nus = MTGP['nus']
 
-        # The data must contain the list/lists of x-axes
+        # The data contains the list/lists of x-axes
         self.data = data
         self.ndata = len(data)
 
-        # To print a few details of the run when the class is initialised
+        # Print details of the run when the class is initialised
         print(f'Number of tasks: {self.nTasks}')
-        print(f'Number of datasets: {self.ndata}')
-        # print the chosen kernels
+        print(f'Number of datasets: {len(self.data)}')
         print(f'Kernels: {self.models}')
 
-        # To define kernels and data in a dictionary
-        self.kernel_f = {}
-        self.data_f = {}
-        for i in range(self.nTasks):
-            self.kernel_f[f't_{i}'] = self.models[i]
-            self.data_f[f't_{i}'] = self.data[i]
+        self.setup_kernel_data()
         
         # To check if the  number of datasets is equal to the number of models
         if len(self.data) != self.nmodel:
             raise ValueError(f'Error: data length is {len(self.data)} and does not match the number of kernels {self.nmodel}')
         
-        # Here we initialise the interpolated covarince matrix function that can be called with the parameters
-        # We interpolate between the min and max values of scale lengths and the number of points is set to be 100
-        # This is done to speed up the calculation of the covariance matrix
+        if len(set(self.models)) == 1 and self.nTasks > 1 and self.models[0] == 'SE':
+            print(f'Perfroming a multi task Gaussian process regression using {self.models[0]} kernels and {self.nTasks} tasks')
+            pass
+        elif len(set(self.models)) == 1 and self.nTasks > 1 and self.models[0] in ['M92', 'M72', 'M52', 'M32']:
+            # if all the kernels are the same, we can define the cross covariance matrix
+            print(f'Perfroming a multi task Gaussian process regression using {self.models[0]} kernels and {self.nTasks} tasks')
+            # To check if the interpolated cross covariance matrix exists in the backend folder
 
-        self.CovMat = {}
-        self.CovMat_all = []
-        self.data_tau = {}
-
-        for i in range(self.nmodel):
-            for j in range(self.nmodel):
-                self.nu1 = self.nus[i]
-                self.nu2 = self.nus[j]
-                # To create the symmetric matrix
-                if i == j:
-                    # for these we have simply the auto covariance matrix
-                    self.data_tau[f't_{i}{j}'] = self.data[i][:, None] - self.data[j][None, :]
-                    self.CovMat[f't_{i}{j}'] = self.kernel(self.models[i], self.data[i], self.data[j])
-                if i < j:
-                    # Set l1 and l2 values from the config file taskwise 
-                    l1_values = np.linspace(MTGP[f'Task_{i+1}']['l_min'], MTGP[f'Task_{i+1}']['l_max'], MTGP['n_points'])
-                    l2_values = np.linspace(MTGP[f'Task_{j+1}']['l_min'], MTGP[f'Task_{j+1}']['l_max'], MTGP['n_points'])
-                    tau_values = np.linspace(-10, 10, MTGP['n_points'])
-                    self.CovMat[f't_{i}{j}'] = self.KcMM(l1_values, l2_values, tau_values)
-                    # To create the dictionary of tau values from the for each cross and auto combination of task
-                    self.data_tau[f't_{i}{j}'] = self.data[i][:, None] - self.data[j][None, :]
-                else:
-                    self.data_tau[f't_{j}{i}'] = self.data_tau[f't_{i}{j}']
-                    self.CovMat[f't_{j}{i}'] = np.transpose(self.CovMat[f't_{i}{j}'])
+            self.file_path = os.path.join(os.path.dirname(__file__), f'backend/cross_kernels/KcMM_{self.models[0]}_{self.models[0]}.pck')
+            print(f'Checking if the cross covariance matrix exists in {self.file_path} ... ')
+            if not os.path.exists(self.file_path):
+                # Here we update any necessary interpolation parameters
+                self.nu1 = self.nu2 = self.nus[0]
+                self.make_cross_kernel()
             
+            print(f'Loading the cross covariance matrix for the multi task GP model with the {self.models[0]} kernel ... ')
+            with open(self.file_path, 'rb') as f:
+                self.KcMM_int = pickle.load(f)
+                
+        elif len(set(self.models)) == 1 and self.nTasks==1:
+            print(f'Perfroming a simple Gaussian process regression for a single task using {self.models[0]} kernel')
+        else:
+            # Cross covariance is not defined for different kernels
+            raise ValueError('Error: Multi kernel cross covariance matrix is not defined, only multi task for same kernel is defined')
         
+        # To initialise the total covariance matrix as a dictionary which is a function of the kernel parameters
+        self.CovMat = {}
+
+    def setup_kernel_data(self):
+        """Define kernels and data in a dictionary."""
+        self.kernel_f = {}
+        self.data_f = {}
+        for i in range(self.nTasks):
+            self.kernel_f[f't_{i}'] = self.models[i]
+            self.data_f[f't_{i}'] = self.data[i]
+
+        # Define the data_tau dictionary, which contains the difference between the x-axes of the datasets
+        self.data_tau = {}
+        for i in range(self.nTasks):
+            for j in range(self.nTasks):
+                self.data_tau[f't_{i}{j}'] = self.data_f[f't_{i}'][:, None] - self.data_f[f't_{j}'][None, :]
         
     def __call__(self, pars):
         """
             It returns the covariance matrix for the GP model for the given paramters 
         """
         # We set the self-scaling in the likelihood function and here simply create the dictionary of parameters
+        # self.CovMat_all = np.block([[ pars[i,0]* pars[j,0]*self.CovMat[f't_{i}{j}']([pars[i,1]* pars[j,1], self.data_tau[f't_{i}{j}']]) for i in range(self.nTasks)] for j in range(self.nTasks)])
 
-        self.CovMat_all = np.block([[ pars[i,0]* pars[j,0]*self.CovMat[f't_{i}{j}']([pars[i,1]* pars[j,1], self.data_tau[f't_{i}{j}']]) for i in range(self.nTasks)] for j in range(self.nTasks)])
+        self.CovMat_all = self.CovMat_all(pars)
         return self.CovMat_all
         
     # Define the special fucntions needed for the generalised matern kernel
@@ -122,10 +129,6 @@ class Kernels(object):
         x = np.abs(tau)
         if nu == 0.0: # Squared Exponential kernel
             return np.exp(- (x**2.)/(2. * l1**2.))
-        elif nu == 5/2: # Matern 5/2 kernel
-            return  kernel.gMdef(tau, l1, nu) * self._spkv_(tau,l1) / np.pi
-        elif nu == 7/2: # Matern 7/2 kernel
-            return kernel.gMdef(tau,l1, nu)
         else: # Generalised Matern kernel
             A, B, C = kernel.gMdef(tau,l1,nu)
             A = A * (self._spgamma_(nu/2. - 1./4.)/self._spgamma_(nu/2. + 1./4.))**(1./2.) * (self._spgamma_(nu + 1./2.)/self._spgamma_(nu))**(1./4.)
@@ -171,7 +174,7 @@ class Kernels(object):
             nu tends to 0, the matern kernel tends to the absolute exponential kernel
             The input x1 and x2 are the x-axes of the data points and l_s is the scale length
             """
-        
+        # Here to-do the nu = half-integer cases -- Sandeep 
         # This fucntion returns nan when x1 = x2, so we need to replace nan with zero 
         return np.nan_to_num((2.**(1.-nu)/sp.special.gamma(nu)) * ((np.sqrt(2.*nu) * np.abs(x1-x2))/l_s)**nu * sp.special.kv(nu, (np.sqrt(2.*nu) * np.abs(x1-x2))/l_s)) + np.eye(len(x1)) 
 
@@ -184,17 +187,7 @@ class Kernels(object):
             x2 = x1
         if model == 'SE': # Squared Exponential kernel
             return params[0]**2. * np.exp(- ((x1[:, None]-x2[None, :])**2.)/(2. * params[1]**2.))
-        if model == 'M92': # Matern 9/2 kernel
-            mat_nu = 9./2.
-            return params[0]**2. * self.matern(mat_nu, x1[:, None], x2[None, :], params[1])
-        if model == 'M72': # Matern 7/2 kernel
-            mat_nu = 7./2.
-            return params[0]**2. * self.matern(mat_nu, x1[:, None], x2[None, :], params[1]) 
-        if model == 'M52': # Matern 5/2 kernel
-            mat_nu = 5./2.
-            return params[0]**2. * self.matern(mat_nu, x1[:, None], x2[None, :], params[1])
-        if model == 'M32': # Matern 3/2 kernel
-            mat_nu = 3./2.
+        if model in ['M92', 'M72', 'M52', 'M32']: # Matern 9/2 kernel
             return params[0]**2. * self.matern(mat_nu, x1[:, None], x2[None, :], params[1])
         if model == 'matern' and mat_nu is not None:
             return params[0]**2. * self.matern(mat_nu, x1[:, None], x2[None, :], params[1])
@@ -203,21 +196,28 @@ class Kernels(object):
         """ 
             Defines the cross kernel function for the GP model and returns the covariance matrix 
             """
-        # product of the sigmas
-        sig1sig2 = params1[0] * params2[0]
-        # product of the scale lengths
-        l1l2 = params1[1] * params2[1]
-        # quadrature of length scales
-        l1l2_quad = params1[1]**2. + params2[1]**2.
-        # difference between x1 and x2
-        x1x2 = x1[:, None]-x2[None, :]
+        if model1 == model2:
+            model_here = model1    
+            # difference between x1 and x2
+            x1x2 = x1[:, None]-x2[None, :]
+            # product of the sigmas
+            sig1sig2 = params1[0] * params2[0]
 
-        if model1 == 'SE' and model2 == 'SE': # Squared Exponential kernel
-            # This fucntion boils down to the SE kernel function when the scale lengths are equal for both the datasets
-            return sig1sig2 * np.exp(- (x1x2**2.)/(l1l2_quad)) * np.sqrt(2. * l1l2 / l1l2_quad)
+            if model_here == 'SE': # Squared Exponential kernel
+                # product of the scale lengths
+                l1l2 = params1[1] * params2[1]
+                # quadrature of length scales
+                l1l2_quad = params1[1]**2. + params2[1]**2.
+                # This fucntion boils down to the SE kernel function when the scale lengths are equal for both the datasets
+                return sig1sig2 * np.exp(- (x1x2**2.)/(l1l2_quad)) * np.sqrt(2. * l1l2 / l1l2_quad)
+            elif model_here in ['M92', 'M72', 'M52', 'M32']: 
+                # the pickle file name is the 'KcMM_M92_M92.pkl' where the first M92 is the model1 and the second M92 is the model2
+                lambda_func = np.vectorize(lambda x: self.KcMM_int([x, params1[1], params2[1]]))
+                return sig1sig2 * np.array(lambda_func(x1x2))
+                
         else:
-            print('Error: Cross kernel not defined')
-            sys.exit(0)
+            raise ValueError(f'Error: Cross kernel not defined for {model1} and {model2}')
+
 
     def Cov_Mat(self, params):
         """ 
@@ -228,14 +228,77 @@ class Kernels(object):
         for i in range(self.nTasks):
             for j in range(self.nTasks):
                 if i == j:
-                    self.CovMat[f't_{i}{j}'] = self.kernel(self.kernel_f[f't_{i}'], params[i], self.data_f[f't_{i}'])
+                    self.CovMat[f't_{i}{j}'] = self.kernel(self.kernel_f[f't_{i}'], params[i], self.data_f[f't_{i}'], mat_nu=self.nus[i])
                 elif i < j:
                     self.CovMat[f't_{i}{j}'] = np.transpose(self.cross_kernel(self.kernel_f[f't_{i}'], self.kernel_f[f't_{j}'], params[i], params[j], self.data_f[f't_{i}'], self.data_f[f't_{j}']))
                 else:
                     self.CovMat[f't_{i}{j}'] = np.transpose(self.CovMat[f't_{j}{i}'])
         
         # To join all the covariance matrices defined above in the dictionaries into one big covariance matrix taking into account the cross correlations between the datasets 
-        self.CovMat_all = np.block([[ self.CovMat[f't_{i}{j}'] for i in range(self.nTasks)] for j in range(self.nTasks)])  
+        CovMat_all = np.block([[ self.CovMat[f't_{i}{j}'] for i in range(self.nTasks)] for j in range(self.nTasks)])  
         
-        return self.CovMat_all
+        return CovMat_all
     
+    def make_cross_kernel(self):
+        """This function is used to create and save the interpolated cross kernel for the multi task GP model"""
+        
+        print(f'Constructing the cross covariance matrix for the multi task GP model with the {self.models[0]} kernel ... ')
+        self.nu1 = self.nu2 = self.nus[0]
+        # The following has to be changed to modify the resolution of the cross covariance matrix
+        l1_values = np.linspace(0.01, 20, 100)
+        l2_values = np.linspace(0.01, 20, 100)
+        tau_values = np.linspace(-10, 10, 100)
+
+        integrals = np.zeros((len(tau_values), len(l2_values), len(l1_values)))
+        params = list(itertools.product(tau_values, l2_values, l1_values))
+        with Pool() as pool:
+            integrals = pool.map(self.gMMdef_integrand, params)
+        integrals = np.array(integrals).reshape((len(tau_values), len(l2_values), len(l1_values)))   
+
+
+        KcMM_int = RegularGridInterpolator((tau_values, l2_values, l1_values), integrals, bounds_error=False, fill_value=None)
+        with open(self.file_path, 'wb') as f:
+            pickle.dump(KcMM_int, f)
+        
+        print(f'Cross covariance matrix saved in {self.file_path}')
+
+
+    # class predict(Kernels):
+    #     """
+    #         This class is used to predict the mean and the variance of the GP model for a given set of optimized hyper-parameters
+    #         """
+    #     # import attributes from the parent class Kernels with out the need to initialise the parent class
+    #     def __init__(self, data_x, data_y, data_cov, target, filename = None, verbose = False):
+    #         self.__dict__ = Kernels(data_x, filename = None, verbose = False).__dict__
+    #         self.data_x = data_x
+    #         self.data_y = data_y
+    #         self.data_cov = data_cov
+    #         self.target = target
+    #         self.setup_kernel_data()
+
+    #         if len(self.target) != self.nTasks:
+    #             raise ValueError(f'Error: target length is {len(self.target)} and does not match the number of kernels {self.nTasks}')
+
+    #     def __call__(self, params):
+    #         """
+    #             It returns the mean and the variance of the GP model for the given paramters 
+    #             """
+    #         # The total covariance is sum of the covariance matrix and the data covariance matrix
+    #         self.CovMat_all = self.Cov_Mat(params) + self.data_cov
+    #         self.reconstructed = self.reconstruct(params)
+        
+    #         return self.reconstructed
+            
+    #     def reconstruct(self, params):
+    #         """
+    #             It returns the reconstructed funcitons for the given paramters at the target 
+    #             """
+    #         # To reconstruct each task separately
+    #         for i in range(self.nTasks):
+    #             # construcnt the covariance matrix for each task at the target 
+    #             self.CovMat_task = self.kernel(self.kernel_f[f't_{i}'], params[i], self.data_f[f't_{i}'], self.target, mat_nu=self.nus[i])
+    #             mean = np.dot(self.CovMat_task, np.linalg.solve(self.CovMat_all, self.target))
+
+            
+    #         variance = np.diag(self.CovMat_all) - np.diag(np.dot(self.CovMat_all, np.linalg.solve(self.CovMat_all, np.transpose(self.CovMat_all))))
+    #         return mean, variance
