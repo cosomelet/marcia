@@ -197,9 +197,9 @@ class Data:
         # This is the Planck 2018 data special case where we want 
         # to use the TT data only
         data = loadtxt(os.path.join(__datapath__, 'Planck_Spectra','COM_PowerSpect_CMB-TT-binned_R3.01.txt'))
-        x = data[:,0]
-        y = data[:,1]
-        sigma = (data[:,2] + data[:,3])/2
+        x = data[:,0]/1000
+        y = data[:,1]/1000
+        sigma = (data[:,2] + data[:,3])/2/1000
         covar = np.diag(sigma**2)
         return x,y,covar
     
@@ -207,9 +207,9 @@ class Data:
         # This is the Planck 2018 data special case where we want 
         # to use the EE data only
         data = loadtxt(os.path.join(__datapath__, 'Planck_Spectra','COM_PowerSpect_CMB-EE-binned_R3.02.txt'))
-        x = data[:,0]
-        y = data[:,1]
-        sigma = (data[:,2] + data[:,3])/2
+        x = data[:,0]/1000
+        y = data[:,1]/10
+        sigma = (data[:,2] + data[:,3])/2/10
         covar = np.diag(sigma**2)
         return x,y,covar
     
@@ -217,8 +217,8 @@ class Data:
         # This is the Planck 2018 data special case where we want 
         # to use the TE data only
         data = loadtxt(os.path.join(__datapath__, 'Planck_Spectra','COM_PowerSpect_CMB-TE-binned_R3.02.txt'))
-        x = data[:,0]
-        y = data[:,1]
-        sigma = (data[:,2] + data[:,3])/2
+        x = data[:,0]/1000
+        y = data[:,1]/100
+        sigma = (data[:,2] + data[:,3])/2/100
         covar = np.diag(sigma**2)
         return x,y,covar

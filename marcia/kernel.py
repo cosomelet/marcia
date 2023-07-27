@@ -1,7 +1,5 @@
-import sys
 import os
 
-import cmath
 import numpy as np
 import scipy as sp
 import scipy.constants as const
@@ -18,24 +16,26 @@ import pickle
 
 from marcia import Data
 from marcia import GPconfig
-from marcia.backend import kernel as kernel
+from marcia.backend import kernel as kbackend
 
-class Kernels(object):
+
+class Kernel(object):
+
     """
         General Gaussian process modelling that all the specific kernels must be inherited from.
         Inputs would be the appropriate amplitude and scaling parameters needed for the particular model. 
         This initialisation retuns the final covarinace matrices as functions of kernal paramters. 
         """
-    def __init__(self, data, filename = None, verbose = False):
+    def __init__(self, data, filename = None):
         """
         Initialisation takes the data and the filename for the config file, which declares all the GP 
         configurations.
         """
         self.clight = 299792458. / 1000.  # km/s
         # Read the config file
-        self.ini_path = os.path.join(os.path.dirname(__file__), 'GPconfig.ini')
-        print(f'Loading the config file from {self.ini_path} ... ')
-        MTGP = GPconfig.GPConfig(filename if filename else self.ini_path).__dict__
+        self.filename = filename if filename else os.path.join(os.path.dirname(__file__), 'GPconfig.ini')
+        print(f'Loading the config file from {self.filename} ... ')
+        MTGP = GPconfig.GPConfig(self.filename).__dict__
         
         # Read the models and the number of tasks
         self.models = MTGP['models']
@@ -128,7 +128,7 @@ class Kernels(object):
         if nu == 0.0: # Squared Exponential kernel
             return np.exp(- (x**2.)/(2. * l1**2.))
         else: # Generalised Matern kernel
-            A, B, C = kernel.gMdef(tau,l1,nu)
+            A, B, C = kbackend.gMdef(tau,l1,nu)
             A = A * (self._spgamma_(nu/2. - 1./4.)/self._spgamma_(nu/2. + 1./4.))**(1./2.) * (self._spgamma_(nu + 1./2.)/self._spgamma_(nu))**(1./4.)
             B = B / self._spgamma_(nu/2. - 1./4.)
             return A**2. * B * C**(nu/2. - 1./4.) * self._spkv_(tau,l1) / np.pi
@@ -140,7 +140,7 @@ class Kernels(object):
             Finally I define only ine single function for the basis function"""
         B = sp.special.kv(1./4. * (5. - 2. * nu), np.sqrt(2.) * np.sqrt(nu) * np.sqrt(tau**2.) / l1)
         C = np.sqrt(self._spgamma_(1./2. + nu) / self._spgamma_(nu))
-        A, D = kernel.gdMdef(tau, l1, nu)
+        A, D = kbackend.gdMdef(tau, l1, nu)
         D = D * self._spgamma_(1./4. + nu/2.) 
         return A * B * C / D
     
@@ -220,7 +220,6 @@ class Kernels(object):
             Defines the covariance matrix for the GP model and returns the covariance matrix 
             """
         # To create a dictionary of covariance matrices for each task
-        
         for i in range(self.nTasks):
             for j in range(self.nTasks):
                 if i == j:
@@ -257,43 +256,14 @@ class Kernels(object):
             pickle.dump(KcMM_int, f)
         print(f'Cross covariance matrix saved in {self.file_path}')
 
+    # def reconstruct(self, x_star):
+    #     """ Function to reconstruct the GP model for the given x_star values"""
 
-    # class predict(Kernels):
-    #     """
-    #         This class is used to predict the mean and the variance of the GP model for a given set of optimized hyper-parameters
-    #         """
-    #     # import attributes from the parent class Kernels with out the need to initialise the parent class
-    #     def __init__(self, data_x, data_y, data_cov, target, filename = None, verbose = False):
-    #         self.__dict__ = Kernels(data_x, filename = None, verbose = False).__dict__
-    #         self.data_x = data_x
-    #         self.data_y = data_y
-    #         self.data_cov = data_cov
-    #         self.target = target
-    #         self.setup_kernel_data()
+    #     # We define the covariance matrix for the given parameters
+    #     self.CovMat_all = self.Cov_Mat(self.params)
+    #     # We define the mean function for the given parameters
+    #     self.mean = np.zeros(len(self.CovMat_all))
+    #     # We define the data covariance matrix for the given parameters
+    #     self.D_covmat = self.Cov_Mat(self.params)[0:self.ndata, 0:self.ndata]
 
-    #         if len(self.target) != self.nTasks:
-    #             raise ValueError(f'Error: target length is {len(self.target)} and does not match the number of kernels {self.nTasks}')
 
-    #     def __call__(self, params):
-    #         """
-    #             It returns the mean and the variance of the GP model for the given paramters
-    #             """
-    #         # The total covariance is sum of the covariance matrix and the data covariance matrix
-    #         self.CovMat_all = self.Cov_Mat(params) + self.data_cov
-    #         self.reconstructed = self.reconstruct(params)
-        
-    #         return self.reconstructed
-            
-    #     def reconstruct(self, params):
-    #         """
-    #             It returns the reconstructed funcitons for the given paramters at the target
-    #             """
-    #         # To reconstruct each task separately
-    #         for i in range(self.nTasks):
-    #             # construcnt the covariance matrix for each task at the target
-    #             self.CovMat_task = self.kernel(self.kernel_f[f't_{i}'], params[i], self.data_f[f't_{i}'], self.target, mat_nu=self.nus[i])
-    #             mean = np.dot(self.CovMat_task, np.linalg.solve(self.CovMat_all, self.target))
-
-            
-    #         variance = np.diag(self.CovMat_all) - np.diag(np.dot(self.CovMat_all, np.linalg.solve(self.CovMat_all, np.transpose(self.CovMat_all))))
-    #         return mean, variance
