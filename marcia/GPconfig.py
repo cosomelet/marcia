@@ -17,11 +17,14 @@ n_Tasks = 2
 # To set the name of the file to be written,can be changed to any name however called correctly in the code
 filename = 'GPconfig.ini'
 
-# Set the number of tasks in the GENERAL section
 # self scale implies all the tasks have the same length scale paramter. 
 config['GENERAL'] = {'n_Tasks': n_Tasks, 'self_scale': True} 
 
-config['KERNEL'] = {'Interpolate': True, 'Method': 'cubic', 'n_points': 1000 }
+config['KERNEL'] = {'Interpolate': True, 'Method': 'cubic', 'n_points': 100 }
+
+config['COSMO'] = {'cosmo_model': 'LCDM', 'sample': False} # 'LCDM' or 'wCDM', if sample is False then the mean is fixed to the fiducial cosmology
+
+config['ANALYSIS'] = {'method': 'optimise'} # 'optimise' or 'mcmc'
 
 
 # Set the configuration for each task: Need not be a loop, can be done manually as well 
@@ -36,6 +39,13 @@ for i in range(n_Tasks):
     config.set(Task, 'l_max', '10.0')
     config.set(Task, 'sigma_f_min', '0.001')
     config.set(Task, 'sigma_f_max', '10.0')
+
+# if necessary to include a intrinsic scatter or an offset to the covariance matrix 
+config['INTRINSIC_SCATTER'] = {'sigma_int': True, 'offset': True}
+if config['INTRINSIC_SCATTER']['sigma_int']:
+    config['INTRINSIC_SCATTER']['sigma_int'] = '0.1'
+if config['INTRINSIC_SCATTER']['offset']:
+    config['INTRINSIC_SCATTER']['offset'] = '0.0001'
 
 # Write the configparser object to a file
 with open(filename, 'w') as configfile:
@@ -58,8 +68,27 @@ class GPConfig:
 
         # Set the number of tasks
         self.n_Tasks = config.getint('GENERAL', 'n_Tasks')
+        
         # Set the self_scale parameter
         self.self_scale = config.getboolean('GENERAL', 'self_scale')
+
+        # Set the interpolation parameters
+        self.Interpolate = config.getboolean('KERNEL', 'Interpolate')
+        self.Method = config.get('KERNEL', 'Method')
+        self.n_points = config.getint('KERNEL', 'n_points')
+
+        # Set the cosmology part 
+        self.cosmo_model = config.get('COSMO', 'cosmo_model')
+        self.sample = config.getboolean('COSMO', 'sample')
+
+        # Set the analysis part
+        self.method = config.get('ANALYSIS', 'method')
+
+        # Set the intrinsic scatter and offset parameters
+        self.sigma_int = config.getfloat('INTRINSIC_SCATTER', 'sigma_int')
+        self.offset = config.getfloat('INTRINSIC_SCATTER', 'offset')
+    
+
         # Set the configuration for each task
         for i in range(self.n_Tasks):
             Task = 'Task_' + str(i+1)
@@ -77,7 +106,4 @@ class GPConfig:
             # Create the GPparams class
             self.__dict__[Task] = {'model': model, 'nu': nu, 'l_min': l_min, 'l_max': l_max, 'sigma_f_min': sigma_f_min, 'sigma_f_max': sigma_f_max}
         
-        # Set the interpolation parameters
-        self.Interpolate = config.getboolean('KERNEL', 'Interpolate')
-        self.Method = config.get('KERNEL', 'Method')
-        self.n_points = config.getint('KERNEL', 'n_points')
+        
