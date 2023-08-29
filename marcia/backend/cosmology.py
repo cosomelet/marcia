@@ -53,3 +53,6 @@ def transverse_distance(H0,Omega_m,Omega_b,Omega_k,de,z,clight):
     y=odeint(Ly,0.0,z,args=(H0,Omega_m,Omega_b,Omega_k,de))
     return clight* y[:,0]
 
+@njit
+def distance_modulus(Mb,z2,d):
+    return Mb + 25. + 5.*np.log10( (1+ z2)* d )

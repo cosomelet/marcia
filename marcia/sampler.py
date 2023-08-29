@@ -74,9 +74,13 @@ class Sampler:
 
     #@temporarily_false('resume')
     def get_burnin(self):
-        tau = self.sampler().get_autocorr_time()
-        burnin = int(2 * np.max(tau))
-        thin = int(0.5 * np.min(tau))
+        try:
+            tau = self.sampler().get_autocorr_time()
+            burnin = int(2 * np.max(tau))
+            thin = int(0.5 * np.min(tau))
+        except:
+            burnin = 50
+            thin = 1
         return burnin, thin
 
     @temporarily_false('resume')

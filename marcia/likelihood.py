@@ -13,6 +13,7 @@ class Likelihood(object):
         self.priors = self.theory.priors
         self.data = data
         self.db = Data(data)
+        self.inv_covariance = {}
         # The nuisance parameters for each of the datasets, if any have to be added here to the theta
         
 
@@ -23,7 +24,12 @@ class Likelihood(object):
     def chisq_CC(self,theta):
         redshift, hubble_rate, covariance = self.db.get_cosmic_clocks()
         hubble_theory = self.theory.hubble_rate(theta, redshift)
-        return  np.dot(hubble_rate - hubble_theory, np.dot(np.linalg.inv(covariance), hubble_rate - hubble_theory))
+        if 'CC' in self.inv_covariance.keys():
+            icov = self.inv_covariance['CC']
+        else:
+            icov = np.linalg.inv(covariance)
+            self.inv_covariance['CC'] = icov
+        return  np.dot(hubble_rate - hubble_theory, np.dot(icov, hubble_rate - hubble_theory))
     
     def chisq_BAO_alam(self,theta):
         redshift, distance, covariance = self.db.get_BAO_alam()
@@ -33,8 +39,26 @@ class Likelihood(object):
         dist*=rd
         cov = covariance.copy()
         cov*=rd**2
+        if 'BAO_alam' in self.inv_covariance.keys():
+            icov = self.inv_covariance['BAO_alam']
+        else:
+            icov = np.linalg.inv(cov)
+            self.inv_covariance['BAO_alam'] = icov
 
         return  np.dot(dist- distance_theory, np.dot(np.linalg.inv(cov), dist - distance_theory))
+    
+    def chisq_Pantheon_plus(self,theta):
+        cmb_z, mb, covariance = self.db.get_pantheon_plus()
+        helio_z = self.db.get_pantheon_plus(Zhel=True)
+        distance_theory = self.theory.distance_modulus(theta, cmb_z,helio_z)
+        delta = mb - distance_theory
+        if 'Pantheon_plus' in self.inv_covariance.keys():
+            icov = self.inv_covariance['Pantheon_plus']
+        else:
+            icov = np.linalg.inv(covariance)
+            self.inv_covariance['Pantheon_plus'] = icov
+
+        return np.dot(delta, np.dot(icov, delta))
 
 
     def chisq(self,theta):

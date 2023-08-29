@@ -13,7 +13,7 @@ __datapath__ = os.path.join(__path__,'../' 'Data')
 class Data:
 
     def __init__(self,data,file_fs8=0,Lambda=1,b=1,sigma_sys=0.7571,H0=1,):
-        datalist = ['CC','BAO-alam','BAO-zhao','GR','Lya','GRB','SNE','QSA', 'Planck_TT', 'Planck_EE', 'Planck_TE']
+        datalist = ['CC','BAO-alam','BAO-zhao','GR','Lya','GRB','SNE','QSA', 'Planck_TT', 'Planck_EE', 'Planck_TE','Pantheon_plus']
         if type(data) is str:
             assert data in datalist, f'{data} is not in {datalist}'
             self.data = [data]
@@ -98,6 +98,8 @@ class Data:
             return self.get_CMB_planck_EE()
         elif choose == 'Planck_TE':
             return self.get_CMB_planck_TE()
+        elif choose == 'Pantheon_plus':
+            return self.get_pantheon_plus()
         else:
             raise ValueError(f'{choose} is not a valid data set')
     
@@ -222,3 +224,49 @@ class Data:
         sigma = (data[:,2] + data[:,3])/2/100
         covar = np.diag(sigma**2)
         return x,y,covar
+    
+    @load_data_once
+    def get_data_pantheon(self):
+        datapath = os.path.join(__datapath__, 'Pantheon+','Pantheon+SH0ES.dat')
+        covpath = os.path.join(__datapath__, 'Pantheon+','Pantheon+SH0ES_STAT+SYS.cov')
+        
+        data = np.genfromtxt(datapath, skip_header=1)
+
+   
+        with open(datapath, 'r') as file:
+            titles = file.readline().split() 
+            index_ra = titles.index('RA')
+            index_dec = titles.index('DEC')
+
+        wh = (data[:, 2] > 0.01) # redshift cut
+        zhel = data[wh, 6] # heliocentric redshift
+        zcmb = data[wh, 2] # peculiar velocity corrected cmb redshift 
+        mbs = data[wh, 8] # corrected appearent magnitude
+        ra = data[wh, index_ra] # right ascension
+        dec = data[wh, index_dec] # declination
+
+        with open(covpath, 'r') as file:
+            cov = np.loadtxt(file, skiprows=1)
+
+        n = int(round(np.sqrt(len(cov))))
+        cov = np.reshape(cov, (n, n))
+
+        mask = np.array(wh, bool)
+        cov = cov[mask][:, mask]
+        return zcmb, zhel, mbs, cov, ra, dec
+    
+    
+    def get_pantheon_plus(self,Zhel=False,position=False):
+        zcmb, zhel, mbs, cov, ra, dec = self.get_data_pantheon()
+        x = zcmb
+        y = mbs
+        covar = cov
+
+        if Zhel:
+            return zhel
+        elif position:
+            return ra, dec
+        else:
+            return x,y,covar
+       
+        
