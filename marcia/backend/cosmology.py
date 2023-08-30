@@ -38,7 +38,7 @@ def sound_horizon(H0,Omega_b,Omega_m,Obsample):
 
 @njit([f8[:](f8[:])])
 def z_inp(z):
-    return np.arange(0.,np.max(z)+.5,0.01)
+    return np.arange(0.,np.max(z)+.5,0.001)
 
 @njit
 def interpolate(z_inp,z,func):
@@ -55,4 +55,4 @@ def transverse_distance(H0,Omega_m,Omega_b,Omega_k,de,z,clight):
 
 @njit
 def distance_modulus(Mb,z2,d):
-    return Mb + 25. + 5.*np.log10( (1+ z2)* d )
+    return Mb + 25. + 5.*np.log10( (1+ z2) * d )

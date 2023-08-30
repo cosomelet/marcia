@@ -128,7 +128,7 @@ class Cosmology_base(object):
             mu = cbackend.distance_modulus(Mb,z2,d)
         else:
             # This is useful if only SN data is needed to be used
-            Mb = -19.05
+            Mb = -19.2
             d = self.transverse_distance(parameters, z1)
             mu = cbackend.distance_modulus(Mb,z2,d)
         return mu
