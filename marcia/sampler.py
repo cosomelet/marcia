@@ -28,7 +28,7 @@ class Sampler:
 
     
     def MLE(self,verbose=True):
-        nll = lambda x: -self.likelihood.logProb(x)
+        nll = lambda x: -1*self.likelihood.logProb(x)
         result = op.minimize(nll, x0=self.initial_guess, method = 'Nelder-Mead', options={'maxfev': None})
         if verbose:
             print(f'Best-fit values: {result.x}')

@@ -50,7 +50,7 @@ class Likelihood(object):
     def chisq_Pantheon_plus(self,theta):
         cmb_z, mb, covariance = self.db.get_pantheon_plus()
         helio_z = self.db.get_pantheon_plus(Zhel=True)
-        distance_theory = self.theory.distance_modulus(theta, cmb_z,helio_z)
+        distance_theory = self.theory.distance_modulus(theta, cmb_z, helio_z)
         delta = mb - distance_theory
         if 'Pantheon_plus' in self.inv_covariance.keys():
             icov = self.inv_covariance['Pantheon_plus']
