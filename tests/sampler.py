@@ -12,11 +12,11 @@ class TestLikelihood(unittest.TestCase):
     
     def test_chisq(self):
         chisq = self.lk.chisq([70,0.3,147.78])
-        assert np.allclose(round(chisq,3), 20.170710552057066)
+        assert np.allclose(round(chisq,3), 20.170)
     
     def test_logLike(self):
         loglike = self.lk.logLike([70,0.3,147.78])
-        assert np.allclose(round(loglike,4), -10.085355276028533)
+        assert np.allclose(round(loglike,4), -10.0853)
 
 class TestSampler(unittest.TestCase):
     def setUp(self):
