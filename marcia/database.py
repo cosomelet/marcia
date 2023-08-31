@@ -6,7 +6,7 @@ from marcia import load_data_once
 
 
 __path__ = os.path.dirname(os.path.realpath(__file__))
-__datapath__ = os.path.join(__path__,'../' 'Data')
+__datapath__ = os.path.join(__path__, 'Data')
 
 
 

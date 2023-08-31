@@ -1,24 +1,21 @@
-from distutils.core import setup
-from Cython.Build import cythonize
+from setuptools import setup, find_packages
 import numpy
 
 from pathlib import Path
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
-files = ["marcia/*"]
 setup(
-        #name = 'marcia',
-        #packages = ['marcia'],
-        #package_data = {'marcia' : files },
-        #version = 'beta-0.0.0',
-        #install_requires = ['numpy','scipy','emcee','toml'],
-        ext_modules=cythonize("marcia/backend/cosmology_cython.pyx"),
-        include_dirs=[numpy.get_include()]
-        #description = 'Multi tasking Gaussian Process for cosmological inference',
-        #author = ['Balakrishna Sandeep Haridasu','Anto Idicherian Lonappan'], 
-        #author_email = ['mail@antolonappan.me','sandeep.haridasu@sissa.it'],
-        #url = 'https://github.com/antolonappan/pycachera',
-        #long_description=long_description,
-        #long_description_content_type="text/markdown",
-        )
+    name='marcia',
+    packages=find_packages(),
+    version='0.1.0.dev0',
+    install_requires=['numpy', 'scipy', 'emcee', 'toml', 'tqdm'],
+    description='Multi tasking Gaussian Process for cosmological inference',
+    author='Anto Idicherian Lonappan, Balakrishna Sandeep Haridasu',
+    author_email='mail@antolonappan.me, sandeep.haridasu@sissa.it',
+    url='https://github.com/antolonappan/marcia',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    package_data={'marcia': ['params.ini','GPconfig.ini','constants.ini','Data/Pantheon+/*.dat', 'Data/Pantheon+/*.cov']},
+    include_package_data=True,
+)
