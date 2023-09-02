@@ -5,6 +5,7 @@ from scipy.integrate import odeint
 @njit([f8[:](f8,f8,f8,f8,f8[:],f8[:])])
 def hubble_rate(H0,Omega_m,Omega_b,Omega_k,de,z):
     Omega_r = 4.18343*10**-5./(H0/100.)**2.
+    #print('backend_H_r',(1. - Omega_m - Omega_k - Omega_b - Omega_r)*de)
     E2 = Omega_r*((1. + z)**4) + Omega_m*((1. + z)**3) + Omega_b*((1. + z)**3) + Omega_k*((1. + z)**2) + (1. - Omega_m - Omega_k - Omega_b - Omega_r)*de
     Hofz = H0*np.sqrt(E2)
     return Hofz
@@ -44,14 +45,16 @@ def z_inp(z):
 def interpolate(z_inp,z,func):
     return np.interp(z,z_inp,func)
 
+
+
 @njit
-def Ly(y,t,H0,Omega_m,Omega_b,Omega_k,de):
-    return inv_hubble_rate(H0,Omega_m,Omega_b,Omega_k,de,np.array([t]))[0]
-
-
-def transverse_distance(H0,Omega_m,Omega_b,Omega_k,de,z,clight):
-    y=odeint(Ly,0.0,z,args=(H0,Omega_m,Omega_b,Omega_k,de))
-    return clight* y[:,0]
+def transverse_distance(H0,clight,Omega_k,y):
+    if Omega_k > 0.0:
+        return clight/(np.sqrt(Omega_k)*H0)*np.sinh(np.sqrt(Omega_k) * H0*y)
+    elif Omega_k < 0.0:
+        return clight/(np.sqrt(np.abs(Omega_k))*H0)*np.sin((np.sqrt(np.abs(Omega_k)))* H0* y)
+    elif Omega_k == 0.0:
+        return clight* y
 
 @njit
 def distance_modulus(Mb,z2,d):

@@ -193,6 +193,7 @@ class wCDM(Cosmology_base):
     
     def dark_energy_f(self, parameters, z):
         p = self.param(parameters)
+        #print('dark_energy_f',p.w0)
         return cbackend.dark_energy_f_wCDM(p.w0, p.wa, z)
     
     def dark_energy_w(self,parameters, z):
@@ -201,19 +202,14 @@ class wCDM(Cosmology_base):
         return p.w0 + p.wa*(1-a)
     
     def _transverse_distance_(self,parameters, z):
-        # Use this print, in case needed for Error_handling.
-        # print ''
-
-        # def Ly(y,t):
-        #     return self.inv_hubble_rate(parameters,np.array([t]))
-
-        # y=it.odeint(Ly,0.0,z)
-        # tint = np.array(y[:,0])
-        # return self.clight* tint
-
         p = self.param(parameters)
-        de = self.dark_energy_f(parameters, z)
-        return cbackend.transverse_distance(p.H0,p.Omega_m,p.Omega_b,p.Omega_k,de, z,self.clight)
+
+        def Ly(y,t):
+            return self.inv_hubble_rate(parameters,np.array([t]))
+
+        y=it.odeint(Ly,0.0,z)
+        return cbackend.transverse_distance(p.H0,self.clight,p.Omega_k,y[:,0])
+
     
 class LCDM(wCDM):
     def __init__(self, parameters,prior_file=None):
@@ -326,22 +322,6 @@ class kwCDM(wCDM):
         assert len(self.param.parameters) == n, 'kwCDM: parameters are not correct'
 
     
-    def transverse_distance(self, parameters, z):
-        p = self.param(parameters)
-        def Ly(y,t):
-            return 1./self.hubble_rate(parameters,t)
-
-        y=it.odeint(Ly,0.0,z)
-        tint = np.array(y[:,0])
-        if p.Omega_k > 0.0:
-            return np.nan_to_num( self.clight/(np.sqrt(p.Omega_k)*p.H0)*np.sinh(np.sqrt(p.Omega_k) * p.H0*tint))
-
-        elif p.Omega_k < 0.0:
-            return np.nan_to_num( self.clight/(np.sqrt(abs(p.Omega_k))*p.H0)*np.sin((np.sqrt(abs(p.Omega_k)))* p.H0* tint))
-            
-        elif p.Omega_k == 0.0:
-            return np.nan_to_num( self.clight* tint)
-    
 
 class kLCDM(kwCDM):
     def __init__(self, parameters,prior_file=None):
@@ -394,21 +374,6 @@ class kCPL3(CPL3):
             n+=1
         assert len(self.param.parameters) == n, 'kCPL3: parameters are not correct'
     
-    def transverse_distance(self, parameters, z):
-        p = self.param(parameters)
-        def Ly(y,t):
-            return 1./self.hubble_rate(parameters,t)
-
-        y=it.odeint(Ly,0.0,z)
-        tint = np.array(y[:,0])
-        if p.Omega_k > 0.0:
-            return np.nan_to_num( self.clight/(np.sqrt(p.Omega_k)*p.H0)*np.sinh(np.sqrt(p.Omega_k) * p.H0*tint))
-
-        elif p.Omega_k < 0.0:
-            return np.nan_to_num( self.clight/(np.sqrt(abs(p.Omega_k))*p.H0)*np.sin((np.sqrt(abs(p.Omega_k)))* p.H0* tint))
-            
-        elif p.Omega_k == 0.0:
-            return np.nan_to_num( self.clight* tint)
 
     
 class kXCDM(XCDM):
@@ -428,21 +393,5 @@ class kXCDM(XCDM):
         if self.Mbsample:
             n+=1
         assert len(self.param.parameters) == n, 'kXCDM: parameters are not correct'
-    
-    def transverse_distance(self, parameters, z):
-        """transverse distance in Mpc/h"""
-        p = self.param(parameters)
-        def Ly(y,t):
-            return 1./self.hubble_rate(parameters,t)
 
-        y=it.odeint(Ly,0.0,z)
-        tint = np.array(y[:,0])
-        if p.Omega_k > 0.0:
-            return np.nan_to_num( self.clight/(np.sqrt(p.Omega_k)*p.H0)*np.sinh(np.sqrt(p.Omega_k) * p.H0*tint))
-
-        elif p.Omega_k < 0.0:
-            return np.nan_to_num( self.clight/(np.sqrt(abs(p.Omega_k))*p.H0)*np.sin((np.sqrt(abs(p.Omega_k)))* p.H0* tint))
-            
-        elif p.Omega_k == 0.0:
-            return np.nan_to_num( self.clight* tint)
         

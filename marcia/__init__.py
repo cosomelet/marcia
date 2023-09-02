@@ -6,4 +6,4 @@ from .database import Data
 from .likelihood import Likelihood
 from .sampler import Sampler
 from .kernel import *
-from .likelihood_GP import Likelihood_GP
+from .likelihood import Likelihood_GP
