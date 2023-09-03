@@ -67,9 +67,9 @@ class Sampler:
                     index += 1
                     converged = np.all(tau * 100 < sampler.iteration)
                     converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
-                    print(f'I:{sampler.iteration}, A:{(tau*100)-sampler.iteration}, T:{np.abs(old_tau - tau) / tau}')
                     if converged:
                         print(f'Converged at iteration {sampler.iteration}')
+                        print(f'I:{sampler.iteration}, A:{(tau*100)-sampler.iteration}, T:{np.abs(old_tau - tau) / tau}')
                         break
                     old_tau = tau
             else:
@@ -82,9 +82,16 @@ class Sampler:
             print(f'Already completed {last_iteration} iterations')
 
     def get_burnin(self):
-        tau = self.HDFBackend.get_autocorr_time()
-        burnin = int(2 * np.max(tau))
-        thin = int(0.5 * np.min(tau))
+        try:
+            tau = self.HDFBackend.get_autocorr_time()
+            burnin = int(2 * np.max(tau))
+            thin = int(0.5 * np.min(tau))
+            print(f'Burn-in: {burnin} and thin: {thin}')
+        except:
+            print('Autocorrelation time could not be calculated, increase the number of iterations')
+            burnin = 0
+            thin = 1
+            print(f'Burn-in: {burnin} and thin: {thin}[DEFAULT VALUES]')
         return burnin, thin
 
     def get_chain(self, getdist=False):

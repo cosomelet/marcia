@@ -48,8 +48,8 @@ if config['INTRINSIC_SCATTER']['offset']:
     config['INTRINSIC_SCATTER']['offset'] = '0.0001'
 
 # Write the configparser object to a file
-with open(filename, 'w') as configfile:
-    config.write(configfile)
+#with open(filename, 'w') as configfile:
+#    config.write(configfile)
            
 # Read the config file and create the GPparams class
 class GPConfig:
