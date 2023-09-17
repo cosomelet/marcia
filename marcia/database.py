@@ -6,14 +6,14 @@ from marcia import load_data_once
 
 
 __path__ = os.path.dirname(os.path.realpath(__file__))
-__datapath__ = os.path.join(__path__, 'Data')
+__datapath__ = os.path.join(__path__, '..','Data')
 
 
 
 class Data:
 
     def __init__(self,data,file_fs8=0,Lambda=1,b=1,sigma_sys=0.7571,H0=1,):
-        datalist = ['CC','BAO-alam','BAO-zhao','GR','Lya','GRB','SNE','QSA', 'Planck_TT', 'Planck_EE', 'Planck_TE','Pantheon_plus']
+        datalist = ['CC','BAO-alam','BAO-zhao','GR','Lya','GRB','SNE','QSO','QSO_full', 'Planck_TT', 'Planck_EE', 'Planck_TE','Pantheon_plus']
         if type(data) is str:
             assert data in datalist, f'{data} is not in {datalist}'
             self.data = [data]
@@ -186,12 +186,23 @@ class Data:
         sigma = data[:,2]
         covar = sigma * corr * sigma.T
         return x,y,covar
+    
+    
 
-    def get_QSA(self):
-        data = loadtxt(os.path.join(__datapath__, 'Quasars','DL_all_short.txt'))
-        x = data[:,0]
-        y = data[:,1]
-        sigma = data[:,2]
+    
+    @load_data_once
+    def get_QSO_data(self):
+        data = loadtxt(os.path.join(__datapath__, 'Quasars','table3.dat'), usecols=(3,4,5,6,7,9,10, 11, 12))
+        z, lnFUV, lnFUV_err, lnFX, lnFX_err = data[:,0], data[:,1], data[:,2], data[:,3], data[:,4]
+        DM, dDM = data[:,7], data[:,8]
+        return z, lnFUV, lnFUV_err, lnFX, lnFX_err, DM, dDM
+    
+    def get_QSO_full(self):
+        z, lnFUV, lnFUV_err, lnFX, lnFX_err, _, _ = self.get_QSO_data()
+        return z, lnFUV, lnFUV_err, lnFX, lnFX_err
+
+    def get_QSO(self):
+        x,_,_,_,_,y,sigma = self.get_QSO_data()
         covar = np.diag(sigma**2)
         return x,y,covar
 

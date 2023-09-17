@@ -133,6 +133,11 @@ class Cosmology_base(object):
             mu = cbackend.distance_modulus(Mb,z2,d)
         return mu
     
+    def luminosity_distance(self,parameters,z):
+        p = self.param(parameters)
+        d = self.transverse_distance(parameters, z)
+        return d * (1+z)
+    
     # This is to provide the Mb alone
     def Abs_M(self,parameters):
         p = self.param(parameters)
@@ -184,12 +189,12 @@ class wCDM(Cosmology_base):
         assert 'H0' in self.param.parameters, 'wCDM: H0 is not defined in the parameters'
         assert 'w0' in self.param.parameters, 'wCDM: w0 is not defined in the parameters'
         assert 'Omega_m' in self.param.parameters, 'wCDM: Omega_m is not defined in the parameters'
-        n=3
-        if self.rdsample or self.Obsample:
-            n+=1
-        if self.Mbsample:
-            n+=1
-        assert len(self.param.parameters) == n, 'wCDM: parameters are not correct'
+        # n=3
+        # if self.rdsample or self.Obsample:
+        #     n+=1
+        # if self.Mbsample:
+        #     n+=1
+        # assert len(self.param.parameters) == n, 'wCDM: parameters are not correct'
     
     def dark_energy_f(self, parameters, z):
         p = self.param(parameters)
@@ -218,12 +223,12 @@ class LCDM(wCDM):
     def __check_mandatory_parameters__(self):
         assert 'H0' in self.param.parameters, 'LCDM: H0 is not defined in the parameters'
         assert 'Omega_m' in self.param.parameters, 'LCDM: Omega_m is not defined in the parameters'
-        n=2
-        if self.rdsample or self.Obsample:
-            n+=1
-        if self.Mbsample:
-            n+=1
-        assert len(self.param.parameters) == n, 'LCDM: parameters are not correct'
+        # n=2
+        # if self.rdsample or self.Obsample:
+        #     n+=1
+        # if self.Mbsample:
+        #     n+=1
+        # assert len(self.param.parameters) == n, 'LCDM: parameters are not correct'
 
 class CPL(wCDM):
     def __init__(self, parameters,prior_file=None):

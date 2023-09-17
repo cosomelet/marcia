@@ -6,6 +6,9 @@ import sys
 from marcia import GPconfig
 from marcia import CosmoConfig
 from marcia.kernel import Kernel as kern
+from marcia import Params
+
+import pdb
 
 
 class Likelihood(object):
@@ -16,6 +19,7 @@ class Likelihood(object):
         self.theory = cosmo(model,parameters,prior_file) # This needs to be done here to make the code more autonomous
         # This list sets the available data to work with, has to be updated when ever a new dataset is added
         self.priors = self.theory.priors
+        self.params = Params(parameters)
         self.data = data
         self.db = Data(data)
         self.inv_covariance = {}
@@ -64,6 +68,31 @@ class Likelihood(object):
             self.inv_covariance['Pantheon_plus'] = icov
 
         return np.dot(delta, np.dot(icov, delta))
+    
+    def chisq_QSO_dm(self,theta):
+        p = self.params(theta)
+        #pdb.set_trace()
+        z,dm,cov = self.db.get_QSO()
+        distance_theory = self.theory.distance_modulus(theta, z,z)
+        delta = dm - distance_theory
+        var = np.diag(cov)
+        return np.sum(delta**2./(var + p.qso_sigma**2))
+    
+    def chisq_QSO_full(self,theta):
+        p = self.params(theta)
+        z, lnFUV, lnFUV_err, lnFX, lnFX_err = self.db.get_QSO_full()
+        yi = lnFX
+        dyi = lnFX_err
+        xi = lnFUV
+        dxi = lnFUV_err
+        DL = self.theory.luminosity_distance(theta,z)*3.086e24
+
+        psi = p.qso_beta + p.qso_gamma*(xi) + 2*(p.qso_gamma -1)*(np.log10(DL)) + (p.qso_gamma-1)*np.log10(4*np.pi)
+
+        si2 = p.qso_gamma**2 * dxi**2 + dyi**2 + np.exp( 2*np.log(p.qso_sigma) )
+
+        return np.sum((psi - yi)**2/si2 + np.log(2*np.pi*si2))
+
 
 
     def chisq(self,theta):
