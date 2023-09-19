@@ -7,7 +7,6 @@ from marcia import GPconfig
 from marcia import CosmoConfig
 from marcia.kernel import Kernel as kern
 from marcia import Params
-
 import pdb
 
 
@@ -68,6 +67,19 @@ class Likelihood(object):
             self.inv_covariance['Pantheon_plus'] = icov
 
         return np.dot(delta, np.dot(icov, delta))
+
+    def chisq_Pantheon_old(self,theta):
+        cmb_z, mb, covariance = self.db.get_pantheon_old()
+        helio_z = self.db.get_pantheon_old(Zhel=True)
+        distance_theory = self.theory.distance_modulus(theta, cmb_z, helio_z)
+        delta = mb - distance_theory
+        if 'Pantheon_old' in self.inv_covariance.keys():
+            icov = self.inv_covariance['Pantheon_old']
+        else:
+            icov = np.linalg.inv(covariance)
+            self.inv_covariance['Pantheon_old'] = icov
+
+        return np.dot(delta, np.dot(icov, delta))
     
     def chisq_QSO_dm(self,theta):
         p = self.params(theta)
@@ -86,7 +98,6 @@ class Likelihood(object):
         xi = lnFUV
         dxi = lnFUV_err
         DL = self.theory.luminosity_distance(theta,z)*3.086e24
-
         psi = p.qso_beta + p.qso_gamma*(xi) + 2*(p.qso_gamma -1)*(np.log10(DL)) + (p.qso_gamma-1)*np.log10(4*np.pi)
 
         si2 = p.qso_gamma**2 * dxi**2 + dyi**2 + np.exp( 2*np.log(p.qso_sigma) )

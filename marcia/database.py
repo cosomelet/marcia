@@ -13,7 +13,7 @@ __datapath__ = os.path.join(__path__, '..','Data')
 class Data:
 
     def __init__(self,data,file_fs8=0,Lambda=1,b=1,sigma_sys=0.7571,H0=1,):
-        datalist = ['CC','BAO-alam','BAO-zhao','GR','Lya','GRB','SNE','QSO','QSO_full', 'Planck_TT', 'Planck_EE', 'Planck_TE','Pantheon_plus']
+        datalist = ['CC','BAO-alam','BAO-zhao','GR','Lya','GRB','SNE','QSO','QSO_full', 'Planck_TT', 'Planck_EE', 'Planck_TE','Pantheon_plus','Pantheon_old']
         if type(data) is str:
             assert data in datalist, f'{data} is not in {datalist}'
             self.data = [data]
@@ -235,6 +235,26 @@ class Data:
         sigma = (data[:,2] + data[:,3])/2/100
         covar = np.diag(sigma**2)
         return x,y,covar
+    
+    @load_data_once
+    def get_data_pantheon_old(self):  
+        datapath = os.path.join(__datapath__, 'Pantheon_old','lcparam_select.txt')
+        covpath = os.path.join(__datapath__, 'Pantheon_old','cov_select.txt')
+        zcmb, zhel, mb, ra, dec = np.loadtxt(datapath).T
+        cov = np.loadtxt(covpath)
+        return zcmb, zhel, mb, cov, ra, dec
+    
+    def get_pantheon_old(self,Zhel=False,position=False):
+        zcmb, zhel, mb, cov, ra, dec = self.get_data_pantheon_old()
+        x = zcmb
+        y = mb
+        covar = cov
+        if Zhel:
+            return zhel
+        elif position:
+            return ra, dec
+        else:
+            return x,y,covar
     
     @load_data_once
     def get_data_pantheon(self):
