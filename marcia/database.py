@@ -193,18 +193,25 @@ class Data:
     @load_data_once
     def get_QSO_data(self):
         data = loadtxt(os.path.join(__datapath__, 'Quasars','table3.dat'), usecols=(3,4,5,6,7,9,10, 11, 12))
+        position = loadtxt(os.path.join(__datapath__, 'Quasars','table3.dat'), usecols=(1,2))
+        ra = position[:,0]
+        dec = position[:,1]
         z, lnFUV, lnFUV_err, lnFX, lnFX_err = data[:,0], data[:,1], data[:,2], data[:,3], data[:,4]
         DM, dDM = data[:,7], data[:,8]
-        return z, lnFUV, lnFUV_err, lnFX, lnFX_err, DM, dDM
+        return z, lnFUV, lnFUV_err, lnFX, lnFX_err, DM, dDM, ra, dec
     
     def get_QSO_full(self):
-        z, lnFUV, lnFUV_err, lnFX, lnFX_err, _, _ = self.get_QSO_data()
+        z, lnFUV, lnFUV_err, lnFX, lnFX_err, _, _ ,_,_= self.get_QSO_data()
         return z, lnFUV, lnFUV_err, lnFX, lnFX_err
 
     def get_QSO(self):
-        x,_,_,_,_,y,sigma = self.get_QSO_data()
+        x,_,_,_,_,y,sigma,_,_ = self.get_QSO_data()
         covar = np.diag(sigma**2)
         return x,y,covar
+    
+    def get_QSO_position(self):
+        _,_,_,_,_,_,_,ra,dec = self.get_QSO_data()
+        return ra,dec
 
     def get_CMB_planck_TT(self):
         # This is the Planck 2018 data special case where we want 

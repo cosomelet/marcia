@@ -89,17 +89,23 @@ class Sampler:
             print(f'Burn-in: {burnin} and thin: {thin}')
         except:
             print('Autocorrelation time could not be calculated, increase the number of iterations')
-            burnin = 0
-            thin = 1
+            burnin = 100
+            thin = 10
             print(f'Burn-in: {burnin} and thin: {thin}[DEFAULT VALUES]')
         return burnin, thin
 
-    def get_chain(self, getdist=False):
+    def get_chain(self, getdist=False,burnin=None,thin=None):
         sampler = self.HDFBackend
         if sampler.iteration < self.max_n:
             print(f'Only {sampler.iteration} iterations completed')
             print(f'You should run the sampler to finsih the sampling of {self.max_n} iterations')
-        burnin, thin = self.get_burnin()
+        if (burnin is None) and (thin is None):
+            burnin, thin = self.get_burnin()
+        elif burnin is None:
+            burnin,_ = self.get_burnin()
+        elif thin is None:
+            _,thin = self.get_burning()
+
         samples = sampler.get_chain(discard=burnin, thin=thin, flat=True)
         if getdist:
             lnprob = sampler.get_log_prob(discard=burnin, thin=thin, flat=True)
@@ -109,8 +115,8 @@ class Sampler:
             samples = np.concatenate((lnprob[:, None], lnprior[:, None], samples), axis=1)
         return samples
 
-    def corner_plot(self, getdist=False):
-        chains = self.get_chain()
+    def corner_plot(self, getdist=False,burnin=None,thin=None):
+        chains = self.get_chain(getdist,burnin,thin)
         names = self.likelihood.theory.param.parameters
         labels = [p.replace('$', '') for p in self.likelihood.theory.labels]
         if getdist:
