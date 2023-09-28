@@ -192,19 +192,21 @@ class Likelihood_GP(object):
         # Final form is [[sigma_f_1, l_1], [sigma_f_2, l_2], ...]
 
 
-        if self.self_scale == False and len(theta)>=2*self.nTasks:
+        if self.self_scale == False:
             params_GP = []
-            for i in range(self.nTasks):
-                params_GP.append([theta[2*i], theta[2*i+1]])
-        else: 
-            raise ValueError(f'The number of hyperparameters does not match the number of tasks, there must be atleast {2*self.nTasks} hyperparameters')
+            if len(theta)>=2*self.nTasks:
+                for i in range(self.nTasks):
+                    params_GP.append([theta[2*i], theta[2*i+1]])
+            else: 
+                raise ValueError(f'The number of hyperparameters does not match the number of tasks, there must be atleast {2*self.nTasks} hyperparameters')
         
-        if self.self_scale == True and len(theta)>=self.nTasks+1:
+        elif self.self_scale == True:
             params_GP =[]
-            for i in range(self.nTasks):
-                params_GP.append([theta[i], theta[self.nTasks]])
-        else:
-            raise ValueError(f'The number of hyperparameters does not match the number of tasks, there must be atleast {self.nTasks+1} hyperparameters')
+            if len(theta)>=self.nTasks+1:
+                for i in range(self.nTasks):
+                    params_GP.append([theta[i], theta[self.nTasks]])
+            else:
+                raise ValueError(f'The number of hyperparameters does not match the number of tasks, there must be atleast {self.nTasks+1} hyperparameters')
 
 
         if self.ind_scatter == True and len(theta)>=self.nTasks+2:
@@ -226,6 +228,7 @@ class Likelihood_GP(object):
         return -0.5*chi2
 
     def logProb(self, theta):
+        
         lp = self.logPrior(theta)
         theta_GP, theta_scatter = self.set_theta(theta)
         if not np.isfinite(lp):
@@ -237,17 +240,19 @@ class Likelihood_GP(object):
         chi2 = 0
     
         # To set the scatter covariance matrix which is a diagonal matrix of size len of ntasks
+        scatter_matrix = self.offset*np.eye(len(self.D_covmat))
         scatter_diag = []
         for i in range(self.nTasks):
-            scatter_diag.append(theta_scatter[i]**2 * len(self.y[i]))
+            # create arrays of length of the data for each task
+            scatter_diag = np.append(scatter_diag, len(np.array(self.d.x[f'x{i}']))*[theta_scatter[i]**2.])
+            
+        int_scatter_covmat = scatter_matrix + np.diag(scatter_diag)
         
-        int_scatter_covmat = np.diag(scatter_diag)
-
         # To call the GP class to get the covariance matrix
         GP_covmat = self.GP_kernels.Cov_Mat(theta_GP)
 
         # To calculate the total covariance matrix
-        Total_covmat = GP_covmat + self.D_covmat + int_scatter_covmat + self.offset*np.eye(len(self.D_covmat))
+        Total_covmat = GP_covmat + self.D_covmat + int_scatter_covmat 
 
         # To perform cholesky decomposition
         L_inv = np.linalg.inv(Total_covmat)
@@ -262,5 +267,3 @@ class Likelihood_GP(object):
         chi2 = np.dot(y, y_inv.T) + log_det - offset
 
         return chi2
-
-
