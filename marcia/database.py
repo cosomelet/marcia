@@ -90,8 +90,10 @@ class Data:
             return self.get_GRB()
         elif choose == 'SNE':
             return self.get_SNE()
-        elif choose == 'QSA':
-            return self.get_QSA()
+        elif choose == 'QSO':
+            return self.get_QSO()
+        elif choose == 'QSO_full':
+            return self.get_QSO_full()
         elif choose == 'Planck_TT':
             return self.get_CMB_planck_TT()
         elif choose == 'Planck_EE':
