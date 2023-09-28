@@ -10,7 +10,7 @@ import os
 class Sampler:
 
     def __init__(self, model, parameters, data, initial_guess, prior_file=None,
-                 max_n=100000, nwalkers=100, sampler_file='sampler.h5', converge=False,):
+                 max_n=100000, nwalkers=100, sampler_file='sampler.h5', converge=False, prior_dist = 'uniform'):
 
         self.likelihood = lk(model, parameters, data, prior_file)
         self.ndim = len(self.likelihood.priors)
@@ -20,6 +20,8 @@ class Sampler:
         self.HDFBackend = emcee.backends.HDFBackend(sampler_file)
         self.converge = converge
         self.mle = {}
+        self.priors = np.array(self.likelihood.priors)
+        self.prior_dist = prior_dist
 
     def MLE(self, verbose=True):
         if 'result' not in self.mle:
@@ -32,9 +34,13 @@ class Sampler:
 
         return self.mle['result']
 
-    def sampler_pos(self):
-        mle = self.MLE()
-        pos = [mle + 1e-4 * np.random.randn(self.ndim) for _ in range(self.nwalkers)]
+    def sampler_pos(self, prior_dist='uniform'):
+
+        if prior_dist == 'uniform':
+            pos = [np.random.uniform(self.priors[:,0], self.priors[:,1], size = (self.nwalkers,self.ndim))]
+        elif prior_dist == 'best-fit':
+            mle = self.MLE()
+            pos = [mle + 1e-4 * np.random.randn(self.ndim) for _ in range(self.nwalkers)]
         return pos
 
     def sampler(self,reset=False):
@@ -73,7 +79,7 @@ class Sampler:
                         break
                     old_tau = tau
             else:
-                sampler.run_mcmc(self.sampler_pos(), self.max_n, progress=True)
+                sampler.run_mcmc(self.sampler_pos(prior_dist = self.prior_dist), self.max_n, progress=True)
         else:
             if reset:
                 print(f'Reseting sampling from iteration: {last_iteration}')
@@ -89,24 +95,19 @@ class Sampler:
             print(f'Burn-in: {burnin} and thin: {thin}')
         except:
             print('Autocorrelation time could not be calculated, increase the number of iterations')
-            burnin = 100
-            thin = 10
+            burnin = 0.3
+            thin = 1
             print(f'Burn-in: {burnin} and thin: {thin}[DEFAULT VALUES]')
+            print(f'Imposing Burn-in: {burnin} and thin: {thin} by hand')
         return burnin, thin
 
-    def get_chain(self, getdist=False,burnin=None,thin=None):
+    def get_chain(self, getdist=False):
         sampler = self.HDFBackend
         if sampler.iteration < self.max_n:
             print(f'Only {sampler.iteration} iterations completed')
             print(f'You should run the sampler to finsih the sampling of {self.max_n} iterations')
-        if (burnin is None) and (thin is None):
-            burnin, thin = self.get_burnin()
-        elif burnin is None:
-            burnin,_ = self.get_burnin()
-        elif thin is None:
-            _,thin = self.get_burning()
-
-        samples = sampler.get_chain(discard=burnin, thin=thin, flat=True)
+        burnin, thin = self.get_burnin()
+        samples = sampler.get_chain(discard=int(burnin*self.max_n), thin=thin, flat=True)
         if getdist:
             lnprob = sampler.get_log_prob(discard=burnin, thin=thin, flat=True)
             lnprior = sampler.get_blobs(discard=burnin, thin=thin, flat=True)
@@ -115,8 +116,8 @@ class Sampler:
             samples = np.concatenate((lnprob[:, None], lnprior[:, None], samples), axis=1)
         return samples
 
-    def corner_plot(self, getdist=False,burnin=None,thin=None):
-        chains = self.get_chain(getdist,burnin,thin)
+    def corner_plot(self, getdist=False):
+        chains = self.get_chain()
         names = self.likelihood.theory.param.parameters
         labels = [p.replace('$', '') for p in self.likelihood.theory.labels]
         if getdist:
