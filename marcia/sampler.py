@@ -1,6 +1,7 @@
 import emcee
 import numpy as np
 from marcia import Likelihood as lk
+# from marcia import Likelihood_GP as lkGP
 from getdist import plots, MCSamples
 import scipy.optimize as op
 from chainconsumer import ChainConsumer
@@ -10,8 +11,10 @@ import os
 class Sampler:
 
     def __init__(self, model, parameters, data, initial_guess, prior_file=None,
-                 max_n=100000, nwalkers=100, sampler_file='sampler.h5', converge=False, prior_dist = 'uniform'):
+                 max_n=100000, nwalkers=100, sampler_file='sampler.h5', converge=False, prior_dist = 'uniform', burnin = 0.3, thin = 1):
 
+        self.data = data
+        self.model = model
         self.likelihood = lk(model, parameters, data, prior_file)
         self.ndim = len(self.likelihood.priors)
         self.nwalkers = nwalkers
@@ -22,6 +25,10 @@ class Sampler:
         self.mle = {}
         self.priors = np.array(self.likelihood.priors)
         self.prior_dist = prior_dist
+
+        # default burnin and thinning
+        self.burnin = burnin
+        self.thin = thin
 
     def MLE(self, verbose=True):
         if 'result' not in self.mle:
@@ -37,7 +44,7 @@ class Sampler:
     def sampler_pos(self, prior_dist='uniform'):
 
         if prior_dist == 'uniform':
-            pos = [np.random.uniform(self.priors[:,0], self.priors[:,1], size = (self.nwalkers,self.ndim))]
+            pos = np.random.uniform(self.priors[:,0], self.priors[:,1], size = (self.nwalkers,self.ndim))
         elif prior_dist == 'best-fit':
             mle = self.MLE()
             pos = [mle + 1e-4 * np.random.randn(self.ndim) for _ in range(self.nwalkers)]
@@ -85,7 +92,7 @@ class Sampler:
                 print(f'Reseting sampling from iteration: {last_iteration}')
                 self.HDFBackend.reset(self.nwalkers, self.ndim)
                 return self.sampler()
-            print(f'Already completed {last_iteration} iterations')
+            print(f'Chain exists with {last_iteration} iterations: increase iterations to continue sampling')
 
     def get_burnin(self):
         try:
@@ -94,11 +101,11 @@ class Sampler:
             thin = int(0.5 * np.min(tau))
             print(f'Burn-in: {burnin} and thin: {thin}')
         except:
+
             print('Autocorrelation time could not be calculated, increase the number of iterations')
-            burnin = 0.3
-            thin = 1
-            print(f'Burn-in: {burnin} and thin: {thin}[DEFAULT VALUES]')
-            print(f'Imposing Burn-in: {burnin} and thin: {thin} by hand')
+            burnin = self.burnin
+            thin = self.thin
+            print(f'Imposing default Burn-in: {burnin} and thin: {thin} by hand')
         return burnin, thin
 
     def get_chain(self, getdist=False):
@@ -138,3 +145,17 @@ class Sampler:
             data[name]['mean'] = np.mean(samples[:,i])
             data[name]['std'] = np.std(samples[:,i])
         return data
+
+
+# class GPSampler(Sampler):
+#     """
+#     Class to sample the GP parameters that inherits from the Sampler class
+#     """
+#     def __init__(self, GP_filename = None):
+#         super().__init__()
+#         data_list = self.data
+
+#         if GP_filename is None:
+#             GP_filename = 'GPconfig.ini'
+
+#         self.likelihood = lkGP(data = data_list, GP_filename = GP_filename)
