@@ -55,7 +55,7 @@ class Likelihood(object):
 
         return  np.dot(dist- distance_theory, np.dot(np.linalg.inv(cov), dist - distance_theory))
     
-    def chisq_Pantheon_plus(self,theta):
+    def chisq_Pantheon_plus(self,theta, residual = False):
         cmb_z, mb, covariance = self.db.get_pantheon_plus()
         helio_z = self.db.get_pantheon_plus(Zhel=True)
         distance_theory = self.theory.distance_modulus(theta, cmb_z, helio_z)
@@ -66,9 +66,12 @@ class Likelihood(object):
             icov = np.linalg.inv(covariance)
             self.inv_covariance['Pantheon_plus'] = icov
 
-        return np.dot(delta, np.dot(icov, delta))
+        if residual:
+            return delta, np.sqrt(np.diag(covariance))
+        else:
+            return np.dot(delta, np.dot(icov, delta))
 
-    def chisq_Pantheon_old(self,theta):
+    def chisq_Pantheon_old(self,theta, residual = False):
         cmb_z, mb, covariance = self.db.get_pantheon_old()
         helio_z = self.db.get_pantheon_old(Zhel=True)
         distance_theory = self.theory.distance_modulus(theta, cmb_z, helio_z)
@@ -78,17 +81,22 @@ class Likelihood(object):
         else:
             icov = np.linalg.inv(covariance)
             self.inv_covariance['Pantheon_old'] = icov
-
-        return np.dot(delta, np.dot(icov, delta))
+        if residual:
+            return delta, np.sqrt(np.diag(covariance))
+        else:   
+            return np.dot(delta, np.dot(icov, delta))
     
-    def chisq_QSO_dm(self,theta):
+    def chisq_QSO(self,theta, residual = False):
         p = self.params(theta)
         #pdb.set_trace()
         z,dm,cov = self.db.get_QSO()
-        distance_theory = self.theory.distance_modulus(theta, z,z)
+        distance_theory = self.theory.distance_modulus(theta, z,z) - p.M_b
         delta = dm - distance_theory
         var = np.diag(cov)
-        return np.sum(delta**2./(var + p.qso_sigma**2))
+        if residual:
+            return delta, np.sqrt(var)
+        else:
+            return np.sum(delta**2./(var + p.qso_sigma**2))
     
     def chisq_QSO_full(self,theta):
         p = self.params(theta)
