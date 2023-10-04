@@ -247,8 +247,8 @@ class Data:
     
     @load_data_once
     def get_data_pantheon_old(self):  
-        datapath = os.path.join(__datapath__, 'Pantheon_old','lcparam_select.txt')
-        covpath = os.path.join(__datapath__, 'Pantheon_old','cov_select.txt')
+        datapath = os.path.join(__datapath__, 'Pantheon_old','lcparam_full.txt')
+        covpath = os.path.join(__datapath__, 'Pantheon_old','cov_full.txt')
         zcmb, zhel, mb, ra, dec = np.loadtxt(datapath).T
         cov = np.loadtxt(covpath)
         return zcmb, zhel, mb, cov, ra, dec
