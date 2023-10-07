@@ -122,12 +122,19 @@ class Likelihood(object):
         return chi2
     
     def logPrior(self, theta):
-        # if self.priors[0][0] < theta[0] < self.priors[0][1] and self.priors[1][0] < theta[1] < self.priors[1][1]:
-        # logPrior is independent of data for the most of it, unless otherwise some strange functions are defined
-        #if all((np.array(theta)-self.priors[:, 0])>0) and all((self.priors[:, 1]-np.array(theta))>0):
         if all(self.priors[i][0] < theta[i] < self.priors[i][1] for i in range(len(theta))):
             return 0.0
         return -np.inf
+    
+    def prior_transform(self,utheta):
+        # Assuming self.priors is a list of tuples [(lower1, upper1), (lower2, upper2), ...]
+        theta = []
+        for i, (lower, upper) in enumerate(self.priors):
+            # Transform the uniform random variable utheta[i] to the prior range [lower, upper]
+            theta_i = lower + (upper - lower) * utheta[i]
+            theta.append(theta_i)
+    
+        return theta
 
 
     def logLike(self,theta):
