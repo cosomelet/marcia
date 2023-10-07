@@ -221,8 +221,9 @@ class LCDM(wCDM):
         super().__init__(parameters,prior_file)
     
     def __check_mandatory_parameters__(self):
-        assert 'H0' in self.param.parameters, 'LCDM: H0 is not defined in the parameters'
-        assert 'Omega_m' in self.param.parameters, 'LCDM: Omega_m is not defined in the parameters'
+        pass
+        #assert 'H0' in self.param.parameters, 'LCDM: H0 is not defined in the parameters'
+        #assert 'Omega_m' in self.param.parameters, 'LCDM: Omega_m is not defined in the parameters'
         # n=2
         # if self.rdsample or self.Obsample:
         #     n+=1
