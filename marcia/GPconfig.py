@@ -18,7 +18,7 @@ n_Tasks = 2
 filename = 'GPconfig.ini'
 
 # self scale implies all the tasks have the same length scale paramter. 
-config['GENERAL'] = {'n_Tasks': n_Tasks, 'self_scale': True} 
+config['GENERAL'] = {'n_Tasks': n_Tasks, 'self_scale': True, 'ind_scatter': False} 
 
 config['KERNEL'] = {'Interpolate': True, 'Method': 'cubic', 'n_points': 100 }
 
@@ -39,6 +39,8 @@ for i in range(n_Tasks):
     config.set(Task, 'l_max', '10.0')
     config.set(Task, 'sigma_f_min', '0.001')
     config.set(Task, 'sigma_f_max', '10.0')
+    config.set(Task, 'sig_int_min', '0.001')
+    config.set(Task, 'sig_int_max', '5.0')
 
 # if necessary to include a intrinsic scatter or an offset to the covariance matrix 
 config['INTRINSIC_SCATTER'] = {'sigma_int': True, 'offset': True}
@@ -72,6 +74,9 @@ class GPConfig:
         # Set the self_scale parameter
         self.self_scale = config.getboolean('GENERAL', 'self_scale')
 
+        # Set the ind_scatter parameter
+        self.ind_scatter = config.getboolean('GENERAL', 'ind_scatter')
+
         # Set the interpolation parameters
         self.Interpolate = config.getboolean('KERNEL', 'Interpolate')
         self.Method = config.get('KERNEL', 'Method')
@@ -103,7 +108,10 @@ class GPConfig:
             l_max = config.getfloat(Task, 'l_max')
             sigma_f_min = config.getfloat(Task, 'sigma_f_min')
             sigma_f_max = config.getfloat(Task, 'sigma_f_max')
+            sig_int_min = config.getfloat(Task, 'sig_int_min')
+            sig_int_max = config.getfloat(Task, 'sig_int_max')
+
             # Create the GPparams class
-            self.__dict__[Task] = {'model': model, 'nu': nu, 'l_min': l_min, 'l_max': l_max, 'sigma_f_min': sigma_f_min, 'sigma_f_max': sigma_f_max}
+            self.__dict__[Task] = {'model': model, 'nu': nu, 'l_min': l_min, 'l_max': l_max, 'sigma_f_min': sigma_f_min, 'sigma_f_max': sigma_f_max, 'sig_int_min': sig_int_min, 'sig_int_max': sig_int_max}
         
         
