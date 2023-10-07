@@ -55,7 +55,7 @@ class Likelihood(object):
 
         return  np.dot(dist- distance_theory, np.dot(np.linalg.inv(cov), dist - distance_theory))
     
-    def chisq_Pantheon_plus(self,theta):
+    def chisq_Pantheon_plus(self,theta, residual = False):
         cmb_z, mb, covariance = self.db.get_pantheon_plus()
         helio_z = self.db.get_pantheon_plus(Zhel=True)
         distance_theory = self.theory.distance_modulus(theta, cmb_z, helio_z)
@@ -66,9 +66,12 @@ class Likelihood(object):
             icov = np.linalg.inv(covariance)
             self.inv_covariance['Pantheon_plus'] = icov
 
-        return np.dot(delta, np.dot(icov, delta))
+        if residual:
+            return delta, np.sqrt(np.diag(covariance))
+        else:
+            return np.dot(delta, np.dot(icov, delta))
 
-    def chisq_Pantheon_old(self,theta):
+    def chisq_Pantheon_old(self,theta, residual = False):
         cmb_z, mb, covariance = self.db.get_pantheon_old()
         helio_z = self.db.get_pantheon_old(Zhel=True)
         distance_theory = self.theory.distance_modulus(theta, cmb_z, helio_z)
@@ -78,17 +81,22 @@ class Likelihood(object):
         else:
             icov = np.linalg.inv(covariance)
             self.inv_covariance['Pantheon_old'] = icov
-
-        return np.dot(delta, np.dot(icov, delta))
+        if residual:
+            return delta, np.sqrt(np.diag(covariance))
+        else:   
+            return np.dot(delta, np.dot(icov, delta))
     
-    def chisq_QSO_dm(self,theta):
+    def chisq_QSO(self,theta, residual = False):
         p = self.params(theta)
         #pdb.set_trace()
         z,dm,cov = self.db.get_QSO()
-        distance_theory = self.theory.distance_modulus(theta, z,z)
+        distance_theory = self.theory.distance_modulus(theta, z,z) - p.M_b
         delta = dm - distance_theory
         var = np.diag(cov)
-        return np.sum(delta**2./(var + p.qso_sigma**2))
+        if residual:
+            return delta, np.sqrt(var)
+        else:
+            return np.sum(delta**2./(var + p.qso_sigma**2))
     
     def chisq_QSO_full(self,theta):
         p = self.params(theta)
@@ -147,6 +155,10 @@ class Likelihood_GP(object):
         self.nmodel = self.nTasks
         self.self_scale = MTGP['self_scale']
         self.scatter = MTGP['sigma_int']
+        self.offset = MTGP['offset']
+
+        # extra paramter per dataset to be added to the theta
+        self.ind_scatter = MTGP['ind_scatter']
 
         # To define the priors for the GP hyperparameters using the the GPconfig file
         self.priors = []
@@ -154,6 +166,9 @@ class Likelihood_GP(object):
             i = i+1 # To start from 1
             self.priors.append([MTGP[f'Task_{i}']['sigma_f_min'], MTGP[f'Task_{i}']['sigma_f_max']])
             self.priors.append([MTGP[f'Task_{i}']['l_min'], MTGP[f'Task_{i}']['l_max']])
+            if self.ind_scatter:
+                self.priors.append([MTGP[f'Task_{i}']['sig_int_min'], MTGP[f'Task_{i}']['sig_int_max']])
+
             
         self.priors = np.array(self.priors)
         
@@ -184,44 +199,68 @@ class Likelihood_GP(object):
         # and possibly with intrinsic scatter at the end [..., sigma_int]
         # Final form is [[sigma_f_1, l_1], [sigma_f_2, l_2], ...]
 
-        if self.self_scale == False and len(theta) != 2*self.nTasks and self.scatter == False:
-            raise ValueError('The number of hyperparameters does not match the number of tasks')
-        elif self.self_scale == False and len(theta) != 2*self.nTasks+1 and self.scatter == True:
-            pass
-        else:
-            # rearrange the theta values into a list of lists
-            params = []
-            for i in range(self.nTasks):
-                params.append([theta[2*i], theta[2*i+1]])
 
-        return params
+        if self.self_scale == False:
+            params_GP = []
+            if len(theta)>=2*self.nTasks:
+                for i in range(self.nTasks):
+                    params_GP.append([theta[2*i], theta[2*i+1]])
+            else: 
+                raise ValueError(f'The number of hyperparameters does not match the number of tasks, there must be atleast {2*self.nTasks} hyperparameters')
+        
+        elif self.self_scale == True:
+            params_GP =[]
+            if len(theta)>=self.nTasks+1:
+                for i in range(self.nTasks):
+                    params_GP.append([theta[i], theta[self.nTasks]])
+            else:
+                raise ValueError(f'The number of hyperparameters does not match the number of tasks, there must be atleast {self.nTasks+1} hyperparameters')
+
+
+        if self.ind_scatter == True and len(theta)>=self.nTasks+2:
+            params_scatter = theta[-self.nTasks:]
+        else:
+            params_scatter = [self.scatter]*self.nTasks
+
+        return params_GP, params_scatter
 
     def logPrior(self, theta):
         # To set the priors for the GP hyperparameters
         for (lower, upper), value in zip(self.priors, theta):
             if not lower < value < upper:
-                # print(value, lower, upper)
-                # sys.exit()
                 return -np.inf
         return 0.0
     
-    def logLike(self,theta):
-        chi2 = self.chisq(theta)
+    def logLike(self,theta_GP, theta_scatter):
+        chi2 = self.chisq(theta_GP, theta_scatter)
         return -0.5*chi2
 
     def logProb(self, theta):
+        
         lp = self.logPrior(theta)
-        theta = self.set_theta(theta)
+        theta_GP, theta_scatter = self.set_theta(theta)
         if not np.isfinite(lp):
             return -np.inf
-        return lp + self.logLike(theta)
+        return lp + self.logLike(theta_GP, theta_scatter)
     
-    def chisq(self,theta):
+    def chisq(self, theta_GP, theta_scatter):
         # We define the GP likelihood here
         chi2 = 0
+    
+        # To set the scatter covariance matrix which is a diagonal matrix of size len of ntasks
+        scatter_matrix = self.offset*np.eye(len(self.D_covmat))
+        scatter_diag = []
+        for i in range(self.nTasks):
+            # create arrays of length of the data for each task
+            scatter_diag = np.append(scatter_diag, len(np.array(self.d.x[f'x{i}']))*[theta_scatter[i]**2.])
+            
+        int_scatter_covmat = scatter_matrix + np.diag(scatter_diag)
+        
         # To call the GP class to get the covariance matrix
-        GP_covmat = self.GP_kernels.Cov_Mat(theta)
-        Total_covmat = GP_covmat + self.D_covmat + 1e-6*np.eye(len(self.D_covmat))
+        GP_covmat = self.GP_kernels.Cov_Mat(theta_GP)
+
+        # To calculate the total covariance matrix
+        Total_covmat = GP_covmat + self.D_covmat + int_scatter_covmat 
 
         # To perform cholesky decomposition
         L_inv = np.linalg.inv(Total_covmat)
@@ -236,5 +275,3 @@ class Likelihood_GP(object):
         chi2 = np.dot(y, y_inv.T) + log_det - offset
 
         return chi2
-
-

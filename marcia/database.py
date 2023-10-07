@@ -90,8 +90,10 @@ class Data:
             return self.get_GRB()
         elif choose == 'SNE':
             return self.get_SNE()
-        elif choose == 'QSA':
-            return self.get_QSA()
+        elif choose == 'QSO':
+            return self.get_QSO()
+        elif choose == 'QSO_full':
+            return self.get_QSO_full()
         elif choose == 'Planck_TT':
             return self.get_CMB_planck_TT()
         elif choose == 'Planck_EE':
@@ -245,8 +247,8 @@ class Data:
     
     @load_data_once
     def get_data_pantheon_old(self):  
-        datapath = os.path.join(__datapath__, 'Pantheon_old','lcparam_select.txt')
-        covpath = os.path.join(__datapath__, 'Pantheon_old','cov_select.txt')
+        datapath = os.path.join(__datapath__, 'Pantheon_old','lcparam_full.txt')
+        covpath = os.path.join(__datapath__, 'Pantheon_old','cov_full.txt')
         zcmb, zhel, mb, ra, dec = np.loadtxt(datapath).T
         cov = np.loadtxt(covpath)
         return zcmb, zhel, mb, cov, ra, dec
