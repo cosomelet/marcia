@@ -1,3 +1,4 @@
+from typing import Any
 import emcee
 import numpy as np
 from marcia import Likelihood as lk
@@ -7,8 +8,75 @@ import scipy.optimize as op
 from chainconsumer import ChainConsumer
 import logging
 import os
+import dynesty
+import pickle as pl
+import matplotlib.pyplot as plt
+from dynesty import plotting as dyplot
 
-class Sampler:
+
+def Sampler(which,*args,**kwargs):
+    if which == 'mcmc':
+        return SamplerMCMC(*args,**kwargs)
+    elif which == 'nest':
+        return SamplerNEST(*args,**kwargs)
+    else:
+        raise ValueError(f'Unknown sampler: {which}')
+
+        
+        
+
+class SamplerNEST:
+
+    def __init__(self,model,parameters,data,bound='multi',sample='rwalk',sampler_file='sampler.pkl'):
+        self.data = data
+        self.model = model
+        self.likelihood = lk(model,parameters,data)
+        self.ndim = len(self.likelihood.priors)
+        self.bound = bound
+        self.sample = sample
+        self.sampler_file = sampler_file
+        
+    
+    def dynesty_sampler(self):
+        dsampler = dynesty.DynamicNestedSampler(self.likelihood.logLike, 
+                                               self.likelihood.prior_transform, ndim=self.ndim,
+                                               bound=self.bound, sample=self.sample)
+        dsampler.run_nested()
+        return dsampler
+    
+    def Sampler(self):
+        if os.path.isfile(self.sampler_file):
+            return pl.load(open(self.sampler_file,'rb'))
+        else:
+            dsampler = self.dynesty_sampler()
+            res = dsampler.results
+            pl.dump(res,open(self.sampler_file,'wb'))
+            return res
+
+    def get_chain(self):
+        res = self.Sampler()
+        samples = res.samples
+        return samples
+
+    def trace_plot(self):
+        res = self.Sampler()
+        labels = self.likelihood.theory.labels
+        fig, axes = dyplot.traceplot(res,labels=labels,
+                             fig=plt.subplots(self.ndim, self.ndim, figsize=(8, 6)))
+        fig.tight_layout()
+    
+    def corner_plot(self):
+        res = self.Sampler()
+        labels = self.likelihood.theory.labels
+        fig, axes = dyplot.cornerplot(res, show_titles=True, 
+                              title_kwargs={'y': 1.04}, labels=labels,
+                              fig=plt.subplots(self.ndim,self.ndim, figsize=(8, 8)))
+        fig.tight_layout()
+
+    
+    
+
+class SamplerMCMC:
 
     def __init__(self, model, parameters, data, initial_guess, prior_file=None,
                  max_n=100000, nwalkers=100, sampler_file='sampler.h5', converge=False, prior_dist = 'uniform', burnin = 0.3, thin = 1):
