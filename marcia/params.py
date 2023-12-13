@@ -3,9 +3,7 @@ import os
 from numba.experimental import jitclass
 from numba import types
 
-current_dir = os.path.dirname(os.path.realpath(__file__))
-act_filepath = os.path.join(current_dir,'params.ini')
-act_params = toml.load(act_filepath)
+
 
 
 specDictToObject = [
@@ -40,9 +38,18 @@ class DictToObject:
 class Params:
 
     def __init__(self,parameters,filepath=None):
+        if filepath is None:
+            current_dir = os.path.dirname(os.path.realpath(__file__))
+            act_filepath = os.path.join(current_dir,'params.ini')
+            act_params = toml.load(act_filepath)
+        else:
+            act_params = toml.load(filepath)
+
         self.act_params = act_params
         if filepath is not None:
             upd_priors = toml.load(filepath)['Priors']
+            # update act_params
+            self.act_params = toml.load(filepath)
             self.upd_priors = upd_priors
         else:
             self.upd_priors = {}
