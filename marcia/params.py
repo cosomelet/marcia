@@ -65,9 +65,6 @@ class Params:
         final_param = dict(param_dic.items() | self.Defaults.items())
         return DictToObject(final_param)
         
-    
-        
-    
     @property
     def check_params(self):
         for param in self.parameters:
@@ -78,8 +75,6 @@ class Params:
                 {list(self.act_params["Label"].keys())}
                 """)
         return True
-
-
 
     @property
     def Labels(self):

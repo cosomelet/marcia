@@ -189,12 +189,6 @@ class wCDM(Cosmology_base):
         assert 'H0' in self.param.parameters, 'wCDM: H0 is not defined in the parameters'
         assert 'w0' in self.param.parameters, 'wCDM: w0 is not defined in the parameters'
         assert 'Omega_m' in self.param.parameters, 'wCDM: Omega_m is not defined in the parameters'
-        # n=3
-        # if self.rdsample or self.Obsample:
-        #     n+=1
-        # if self.Mbsample:
-        #     n+=1
-        # assert len(self.param.parameters) == n, 'wCDM: parameters are not correct'
     
     def dark_energy_f(self, parameters, z):
         p = self.param(parameters)
@@ -222,14 +216,6 @@ class LCDM(wCDM):
     
     def __check_mandatory_parameters__(self):
         pass
-        #assert 'H0' in self.param.parameters, 'LCDM: H0 is not defined in the parameters'
-        #assert 'Omega_m' in self.param.parameters, 'LCDM: Omega_m is not defined in the parameters'
-        # n=2
-        # if self.rdsample or self.Obsample:
-        #     n+=1
-        # if self.Mbsample:
-        #     n+=1
-        # assert len(self.param.parameters) == n, 'LCDM: parameters are not correct'
 
 class CPL(wCDM):
     def __init__(self, parameters,prior_file=None):
@@ -240,12 +226,6 @@ class CPL(wCDM):
         assert 'Omega_m' in self.param.parameters, 'CPL: Omega_m is not defined in the parameters'
         assert 'wa' in self.param.parameters, 'CPL: wa is not defined in the parameters'
         assert 'w0' in self.param.parameters, 'CPL: w0 is not defined in the parameters'
-        # n=4
-        # if self.rdsample or self.Obsample:
-        #     n+=1
-        # if self.Mbsample:
-        #     n+=1
-        # assert len(self.param.parameters) == n, 'CPL: parameters are not correct'
 
 class CPL3(wCDM):
     def __init__(self, parameters,prior_file=None):
@@ -258,12 +238,6 @@ class CPL3(wCDM):
         assert 'w0' in self.param.parameters, 'CPL3: w0 is not defined in the parameters'
         assert 'wb' in self.param.parameters, 'CPL3: wb is not defined in the parameters'
         assert 'wc' in self.param.parameters, 'CPL3: wc is not defined in the parameters'
-        # n=6
-        # if self.rdsample or self.Obsample:
-        #     n+=1
-        # if self.Mbsample:
-        #     n+=1
-        # assert len(self.param.parameters) == n, 'CPL3: parameters are not correct'
 
     def dark_energy_f(self,parameters, z):
         p = self.param(parameters)
@@ -293,12 +267,6 @@ class XCDM(wCDM):
         assert 'fa' in self.param.parameters, 'XCDM: fa is not defined in the parameters'
         assert 'fb' in self.param.parameters, 'XCDM: fb is not defined in the parameters'
         assert 'fc' in self.param.parameters, 'XCDM: fc is not defined in the parameters'
-        # n=5
-        # if self.rdsample or self.Obsample:
-        #     n+=1
-        # if self.Mbsample:
-        #     n+=1
-        # assert len(self.param.parameters) == n, 'XCDM: parameters are not correct'
     
     def dark_energy_f(self,parameters,z):
         p = self.param(parameters)
@@ -320,14 +288,6 @@ class kwCDM(wCDM):
         assert 'Omega_m' in self.param.parameters, 'kwCDM: Omega_m is not defined in the parameters'
         assert 'Omega_k' in self.param.parameters, 'kwCDM: Omega_k is not defined in the parameters'
         assert 'w0' in self.param.parameters, 'kwCDM: w0 is not defined in the parameters'
-        # n=4
-        # if self.rdsample or self.Obsample:
-        #     n+=1
-        # if self.Mbsample:
-        #     n+=1
-        # assert len(self.param.parameters) == n, 'kwCDM: parameters are not correct'
-
-    
 
 class kLCDM(kwCDM):
     def __init__(self, parameters,prior_file=None):
@@ -337,12 +297,6 @@ class kLCDM(kwCDM):
         assert 'H0' in self.param.parameters, 'kLCDM: H0 is not defined in the parameters'
         assert 'Omega_m' in self.param.parameters, 'kLCDM: Omega_m is not defined in the parameters'
         assert 'Omega_k' in self.param.parameters, 'kLCDM: Omega_k is not defined in the parameters'
-        # n=3
-        # if self.rdsample or self.Obsample:
-        #     n+=1
-        # if self.Mbsample:
-        #     n+=1
-        # assert len(self.param.parameters) == n, 'kLCDM: parameters are not correct'
 
 class kCPL(kwCDM):
     def __init__(self, parameters,prior_file=None):
@@ -354,12 +308,6 @@ class kCPL(kwCDM):
         assert 'Omega_k' in self.param.parameters, 'kCPL: Omega_k is not defined in the parameters'
         assert 'w0' in self.param.parameters, 'kCPL: w0 is not defined in the parameters'
         assert 'wa' in self.param.parameters, 'kCPL: wa is not defined in the parameters'
-        # n=5
-        # if self.rdsample or self.Obsample:
-        #     n+=1
-        # if self.Mbsample:
-        #     n+=1
-        # assert len(self.param.parameters) == n, 'kCPL: parameters are not correct'
     
 class kCPL3(CPL3):
     def __init__(self, parameters,prior_file=None):
@@ -373,14 +321,6 @@ class kCPL3(CPL3):
         assert 'wa' in self.param.parameters, 'kCPL3: wa is not defined in the parameters'
         assert 'wc' in self.param.parameters, 'kCPL3: wc is not defined in the parameters'
         assert 'wb' in self.param.parameters, 'kCPL3: wb is not defined in the parameters'
-        # n=7
-        # if self.rdsample or self.Obsample:
-        #     n+=1
-        # if self.Mbsample:
-        #     n+=1
-        # assert len(self.param.parameters) == n, 'kCPL3: parameters are not correct'
-    
-
     
 class kXCDM(XCDM):
     def __init__(self, parameters,prior_file=None):
@@ -393,11 +333,3 @@ class kXCDM(XCDM):
         assert 'fa' in self.param.parameters, 'kXCDM: fa is not defined in the parameters'
         assert 'fb' in self.param.parameters, 'kXCDM: fb is not defined in the parameters'
         assert 'fc' in self.param.parameters, 'kXCDM: fc is not defined in the parameters'
-        # n=6
-        # if self.rdsample or self.Obsample:
-        #     n+=1
-        # if self.Mbsample:
-        #     n+=1
-        # assert len(self.param.parameters) == n, 'kXCDM: parameters are not correct'
-
-        

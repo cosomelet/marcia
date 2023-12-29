@@ -13,7 +13,7 @@ __datapath__ = os.path.join(__path__, '..','Data')
 class Data:
 
     def __init__(self,data,file_fs8=0,Lambda=1,b=1,sigma_sys=0.7571,H0=1,):
-        datalist = ['CC','BAO-alam','BAO-zhao','GR','Lya','GRB','SNE','QSO','QSO_full', 'Planck_TT', 'Planck_EE', 'Planck_TE','Pantheon_plus','Pantheon_old']
+        datalist = ['CC','BAO-DR12','BAO-DR14','GR','Lya','GRB','SNE','QSO','QSO_full', 'Planck_TT', 'Planck_EE', 'Planck_TE','Pantheon_plus','Pantheon_old']
         if type(data) is str:
             assert data in datalist, f'{data} is not in {datalist}'
             self.data = [data]
@@ -78,10 +78,10 @@ class Data:
     def get_data(self,choose):
         if choose == 'CC':
             return self.get_cosmic_clocks()
-        elif choose == 'BAO-alam':
-            return self.get_BAO_alam()
-        elif choose == 'BAO-zhao':
-            return self.get_BAO_zhao()
+        elif choose == 'BAO-DR12':
+            return self.get_BAO_DR12()
+        elif choose == 'BAO-DR14':
+            return self.get_BAO_DR14()
         elif choose == 'GR':
             return self.get_growth()
         elif choose == 'Lya':
@@ -119,7 +119,7 @@ class Data:
         return x,y,covar
 
     @load_data_once
-    def get_BAO_alam(self, ):
+    def get_BAO_DR12(self, ):
         datafile = loadtxt(os.path.join(__datapath__, 'Alam2016','DmH.txt'))
         datafile2 = loadtxt(os.path.join(__datapath__, 'Alam2016','CovDmh.txt'))
         #indices = datafile[:, 0].argsort()
@@ -130,9 +130,9 @@ class Data:
         return x,y,covar
     
     @load_data_once
-    def get_BAO_zhao(self,):
-        datafile = loadtxt(os.path.join(__datapath__, 'Zhao2018','All.txt'))
-        datafile2 = loadtxt(os.path.join(__datapath__, 'Zhao2018','Cov_All.txt'))
+    def get_BAO_DR14(self,):
+        datafile = loadtxt(os.path.join(__datapath__, 'Zhao2018','DmH.txt'))
+        datafile2 = loadtxt(os.path.join(__datapath__, 'Zhao2018','CovDmh.txt'))
         x = datafile[:,0]
         y = datafile[:,1]
         covar = datafile2
@@ -188,9 +188,6 @@ class Data:
         sigma = data[:,2]
         covar = sigma * corr * sigma.T
         return x,y,covar
-    
-    
-
     
     @load_data_once
     def get_QSO_data(self):

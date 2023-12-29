@@ -39,21 +39,59 @@ class Likelihood(object):
             self.inv_covariance['CC'] = icov
         return  np.dot(hubble_rate - hubble_theory, np.dot(icov, hubble_rate - hubble_theory))
     
-    def chisq_BAO_alam(self,theta):
-        redshift, distance, covariance = self.db.get_BAO_alam()
+    def chisq_BAO_DR12(self,theta):
+        redshift, data_mean, covariance = self.db.get_BAO_DR12()
+        len_data = int(len(redshift)/2)
+        redshift = redshift[:len_data]
+
         rd = self.theory.sound_horizon(theta)
-        dist = distance.copy()
-        distance_theory = self.theory.transverse_distance(theta, redshift)
-        dist*=rd
+
+        # dist = data_mean[:len_data].copy()
+        # hubble_rate = data_mean[len_data:].copy()
+
+        distance_theory = self.theory.transverse_distance(theta, redshift)/rd
+        hubble_theory = self.theory.hubble_rate(theta, redshift)*rd/self.clight
+
+        theory_exp = np.concatenate((distance_theory, hubble_theory))
+
+        residual = data_mean - theory_exp
+
         cov = covariance.copy()
-        cov*=rd**2
-        if 'BAO_alam' in self.inv_covariance.keys():
-            icov = self.inv_covariance['BAO_alam']
+
+        if 'BAO_DR12' in self.inv_covariance.keys():
+            icov = self.inv_covariance['BAO_DR12']
         else:
             icov = np.linalg.inv(cov)
-            self.inv_covariance['BAO_alam'] = icov
+            self.inv_covariance['BAO_DR12'] = icov
 
-        return  np.dot(dist- distance_theory, np.dot(np.linalg.inv(cov), dist - distance_theory))
+        return  np.dot(residual, np.dot(np.linalg.inv(cov), residual))
+    
+    def chisq_BAO_DR14(self,theta):
+        redshift, data_mean, covariance = self.db.get_BAO_DR14()
+        len_data = int(len(redshift)/2)
+        redshift = redshift[:len_data]
+
+        rd = self.theory.sound_horizon(theta)
+
+        # dist = data_mean[:len_data].copy()
+        # hubble_rate = data_mean[len_data:].copy()
+
+        distance_theory = self.theory.transverse_distance(theta, redshift)/rd
+        hubble_theory = self.theory.hubble_rate(theta, redshift)*rd/self.clight
+
+        theory_exp = np.concatenate((distance_theory, hubble_theory))
+
+        residual = data_mean - theory_exp
+
+        cov = covariance.copy()
+
+        if 'BAO_DR14' in self.inv_covariance.keys():
+            icov = self.inv_covariance['BAO_DR14']
+        else:
+            icov = np.linalg.inv(cov)
+            self.inv_covariance['BAO_DR14'] = icov
+
+        return  np.dot(residual, np.dot(np.linalg.inv(cov), residual))
     
     def chisq_Pantheon_plus(self,theta, residual = False):
         cmb_z, mb, covariance = self.db.get_pantheon_plus()
@@ -146,8 +184,6 @@ class Likelihood(object):
         if not np.isfinite(lp):
             return -np.inf
         return lp + self.logLike(theta)
-
-
 
 class Likelihood_GP(object):
     # This contains the generalized likelihood for the GP and MTGP
