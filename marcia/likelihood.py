@@ -53,9 +53,9 @@ class Likelihood(object):
         hubble_theory = self.theory.hubble_rate(theta, redshift)*rd/self.clight
 
         theory_exp = np.concatenate((distance_theory, hubble_theory))
-
+        
         residual = data_mean - theory_exp
-
+        
         cov = covariance.copy()
 
         if 'BAO_DR12' in self.inv_covariance.keys():
@@ -93,11 +93,40 @@ class Likelihood(object):
 
         return  np.dot(residual, np.dot(np.linalg.inv(cov), residual))
     
+    def chisq_Lya(self,theta):
+        redshift, data_mean, covariance = self.db.get_Lya()
+        len_data = int(len(redshift)/2)
+        redshift = redshift[:len_data]
+
+        rd = self.theory.sound_horizon(theta)
+
+        # dist = data_mean[:len_data].copy()
+        # hubble_rate = data_mean[len_data:].copy()
+
+        distance_theory = self.theory.transverse_distance(theta, redshift)/rd
+        hubble_theory = self.theory.hubble_rate(theta, redshift)*rd/self.clight
+
+        theory_exp = np.concatenate((distance_theory, hubble_theory))
+
+        residual = data_mean - theory_exp
+
+        cov = covariance.copy()
+
+        if 'Lya' in self.inv_covariance.keys():
+            icov = self.inv_covariance['Lya']
+        else:
+            icov = np.linalg.inv(cov)
+            self.inv_covariance['Lya'] = icov
+
+        return  np.dot(residual, np.dot(np.linalg.inv(cov), residual))
+
+
     def chisq_Pantheon_plus(self,theta, residual = False):
         cmb_z, mb, covariance = self.db.get_pantheon_plus()
         helio_z = self.db.get_pantheon_plus(Zhel=True)
         distance_theory = self.theory.distance_modulus(theta, cmb_z, helio_z)
         delta = mb - distance_theory
+        
         if 'Pantheon_plus' in self.inv_covariance.keys():
             icov = self.inv_covariance['Pantheon_plus']
         else:
@@ -150,7 +179,22 @@ class Likelihood(object):
 
         return np.sum((psi - yi)**2/si2 + np.log(2*np.pi*si2))
 
+    def chisq_CMB_p(self,theta):
+        p = self.params(theta)
+        z, data, cov = self.db.get_CMB_p()
+        z = np.array([z])
+        
+        theory = self.theory.hubble_rate(theta, z)/self.clight
+        
+        delta = data - theory
+        
+        if 'CMB_p' in self.inv_covariance.keys():
+            icov = self.inv_covariance['CMB_p']
+        else:
+            icov = np.linalg.inv(cov)
+            self.inv_covariance['CMB_p'] = icov
 
+        return np.dot(delta, np.dot(icov, delta)) #delta**2./cov #
 
     def chisq(self,theta):
         chi2 = 0

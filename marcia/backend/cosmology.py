@@ -21,18 +21,19 @@ def inv_hubble_rate(H0,Omega_m,Omega_b,Omega_k,de, z):
 
 @njit([f8(f8,f8,f8,b1)])
 def sound_horizon(H0,Omega_b,Omega_m,Obsample):
-    m_nu = 0.06 # In the units of eV
+    m_nu = 0.06 # In the units of eV for the sum of neutrino masses
     omega_nu = 0.0107 *(m_nu/1.0) #This is in the units of eV. This should be equal to 6.42*10^(-4)
     if Obsample:
         omega_b = Omega_b*(H0/100.)**2. #0.0217
     else:
-        omega_b = 0.0217
+        # omega_b = 0.0217 # This is the value used in the Planck 2018 paper 
+        omega_b = 0.0222 # This is the value used in the Aver 2015 using BBN
             
     omega_cb = (Omega_m+Omega_b)*(H0/100.)**2 - omega_nu
     if omega_cb < 0:
         rd = -1.0
     else:
-        rd = 55.154 * np.exp(-72.3* ((omega_nu + 0.0006)**2))/((omega_cb**0.25351)*(omega_b**0.12807))
+        rd = 55.154 * np.exp(-72.3*(omega_nu + 0.0006)**2)/((omega_cb**0.25351)*(omega_b**0.12807)) # This is in the units of Mpc
         if np.isnan(rd):
             rd = 0.0
     return rd

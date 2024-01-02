@@ -192,7 +192,6 @@ class wCDM(Cosmology_base):
     
     def dark_energy_f(self, parameters, z):
         p = self.param(parameters)
-        #print('dark_energy_f',p.w0)
         return cbackend.dark_energy_f_wCDM(p.w0, p.wa, z)
     
     def dark_energy_w(self,parameters, z):

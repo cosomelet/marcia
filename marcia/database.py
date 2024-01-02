@@ -13,7 +13,7 @@ __datapath__ = os.path.join(__path__, '..','Data')
 class Data:
 
     def __init__(self,data,file_fs8=0,Lambda=1,b=1,sigma_sys=0.7571,H0=1,):
-        datalist = ['CC','BAO-DR12','BAO-DR14','GR','Lya','GRB','SNE','QSO','QSO_full', 'Planck_TT', 'Planck_EE', 'Planck_TE','Pantheon_plus','Pantheon_old']
+        datalist = ['CC','BAO-DR12','BAO-DR14','GR','Lya','GRB','SNE','QSO','QSO_full', 'Planck_TT', 'Planck_EE', 'Planck_TE','Pantheon_plus','Pantheon_old', 'CMB_p']
         if type(data) is str:
             assert data in datalist, f'{data} is not in {datalist}'
             self.data = [data]
@@ -102,6 +102,8 @@ class Data:
             return self.get_CMB_planck_TE()
         elif choose == 'Pantheon_plus':
             return self.get_pantheon_plus()
+        elif choose == 'CMB_p':
+            return self.get_CMB_p()
         else:
             raise ValueError(f'{choose} is not a valid data set')
     
@@ -155,6 +157,12 @@ class Data:
         covar = datafile2
         assert len(x) == len(y) == covar.shape[0] == covar.shape[1]
         return x,y,covar
+    
+    def get_CMB_p(self):
+        x = 1089.0
+        y = 5.198 
+        covar = np.diag([(2.4*10.**-2)**2.])
+        return x, y, covar
     
     def get_GRB(self):
         datafile = loadtxt(os.path.join(__datapath__, 'GRB','GRB.txt'),usecols=(1,2,3,4,5))
